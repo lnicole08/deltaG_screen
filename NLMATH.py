@@ -260,10 +260,10 @@ def speedcalc(df, fps):
     
     indices = list(range(1,len(df.columns),2))
     rows = list(range(0,len(df)-1))
-    df_dist = pd.DataFrame()
+    df_disp = pd.DataFrame()
     
     for i,kk in zip(indices, range(1,len(indices)+1)):  #parsing through each object
-        distance_list =[]
+        displacement_list =[]
         temp = pd.DataFrame()
         k = str(kk)
         naming = df.iloc[:,i].name#series name  
@@ -274,19 +274,19 @@ def speedcalc(df, fps):
             y1_D = df.iloc[ii,i+1] #0,2
             x2_D = df.iloc[ii+1,i] #1,1
             y2_D = df.iloc[ii+1,i+1] #1,2
-            distance = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)
-            distance_list.append(distance)
-        temp[nama + " Velocity_" + k]= distance_list
-        df_dist = pd.concat([df_dist, temp], axis=1).reset_index(drop=True)
+            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)
+            displacement_list.append(displacement)
+        temp[nama + " Velocity_" + k]= displacement_list
+        df_disp = pd.concat([df_disp, temp], axis=1).reset_index(drop=True)
 
         
     ca = 1/fps
 
-    df_dist.iloc[:,:] = df_dist.iloc[:,:]/ca      
+    df_disp.iloc[:,:] = df_disp.iloc[:,:]/ca      
     
-    df3 = pd.DataFrame([[np.nan] * len(df_dist.columns)], columns=df_dist.columns)
-    df2 = pd.concat([df3, df_dist], ignore_index=True)
-    #df2 = df3.concat(df_dist, ignore_index=True)
+    df3 = pd.DataFrame([[np.nan] * len(df_disp.columns)], columns=df_disp.columns)
+    df2 = pd.concat([df3, df_disp], ignore_index=True)
+    #df2 = df3.concat(df_disp, ignore_index=True)
     
     df2['Seconds'] = df['Seconds'].reset_index(drop=True)
     return df2
