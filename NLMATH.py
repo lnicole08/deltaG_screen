@@ -90,35 +90,35 @@ def violinfall(df, phase): #obsolete
     
     return dfuu
 
-def rastergraph(dfexpt):   #obsolete
-    import pandas as pd
+# def rastergraph(dfexpt):   #obsolete
+#     import pandas as pd
     
         
-    phase= ["Dark", "Full", 'Recovery']
-    dfn = pd.DataFrame()
-    for n in phase:
-        dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
-        dftot = pd.DataFrame()
-        if n == "Full":
-            dta['Seconds'] -= 23
-        if n == "Recovery":
-            dta['Seconds'] -= 46       
-        dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
+#     phase= ["Dark", "Full", 'Recovery']
+#     dfn = pd.DataFrame()
+#     for n in phase:
+#         dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
+#         dftot = pd.DataFrame()
+#         if n == "Full":
+#             dta['Seconds'] -= 23
+#         if n == "Recovery":
+#             dta['Seconds'] -= 46       
+#         dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
     
-        df_test = dftot.copy()
-        dfuu = pd.DataFrame()
-        for r in dftot.iloc[:,2:].columns:
-            df_temp = pd.DataFrame()
-            df_temp['Time ' + r] = [0]*len(dftot)
-            df_test = pd.concat([df_test,df_temp], axis = 1)
-            df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
-            df_test2= df_test.filter(regex="Time .*")
-            dfuu = pd.melt(df_test2)
-            dfuu["ExperimentState"] = n
-        dfn = pd.concat([dfn, dfuu])
-        dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
+#         df_test = dftot.copy()
+#         dfuu = pd.DataFrame()
+#         for r in dftot.iloc[:,2:].columns:
+#             df_temp = pd.DataFrame()
+#             df_temp['Time ' + r] = [0]*len(dftot)
+#             df_test = pd.concat([df_test,df_temp], axis = 1)
+#             df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
+#             df_test2= df_test.filter(regex="Time .*")
+#             dfuu = pd.melt(df_test2)
+#             dfuu["ExperimentState"] = n
+#         dfn = pd.concat([dfn, dfuu])
+#         dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
     
-    return dfu2
+#     return dfu2
 
 def velodabest(df, typeo, keyword):
     import pandas as pd
