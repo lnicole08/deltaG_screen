@@ -321,3 +321,578 @@ def falldbest(df, name):
     awt2b['Type'] = name
 
     return awt2b
+
+#max velocity of each fly after assimilation phase
+
+def maxvelocity(df, genre):
+    import pandas as pd
+    
+    phases = ["Dark", "Full"]
+    df_max = pd.DataFrame()
+    for phase in phases:
+        df2 = df[(df['ExperimentState']== str(phase))]
+        df_dark = df2.filter(regex="Velocity_.*")
+        df_maxvelocity = pd.DataFrame()
+        df_maxvelocity['maxvelocity'] = df_dark.max(axis = 0)
+        df_maxvelocity['ExperimentState'] = phase
+        df_maxvelocity['Type'] = genre
+        df_maxvelocity['genre'] = str(phase)+ " " + str(genre)
+        df_max = pd.concat([df_max, df_maxvelocity], axis=0)
+    return df_max
+
+def displacementbetweenpauses(df, genre):
+    import pandas as pd
+    import numpy as np
+    from statistics import mean
+    
+    df_dispp = pd.DataFrame()    
+    phases = ["Dark", "Full"]
+    df1 = boutdisplacement(df)
+    valuedflist = []
+    for phase in phases:
+        df47 = df1[(df1['ExperimentState']== str(phase))]
+        df46 = df47.filter(regex="Perioddisp_.*")
+        dftest =pd.DataFrame()
+        
+        for n in df46.columns:
+            df_list = []
+            df_00=pd.DataFrame()
+            df50 = df46[n]
+            x = (df50.shift(1).isnull() & df50.notnull()).cumsum()
+            
+            for i,g in df50.groupby(x):
+                h = g.dropna()
+                sumh = np.sum(h)
+                df_list.append(sumh)
+                          
+            vdflist = list(filter(lambda x: x != 0, df_list))
+            valuedflist = [mean(vdflist) if len(vdflist) > 0 else []]
+            data = {'avgdisplacementbetweenpause': valuedflist, 'ExperimentState': [phase], "Type": genre, 'genre': str(phase)+ " " + str(genre)}
+            index = [n]
+            df_00=pd.DataFrame(data, index = index)                
+            dftest = pd.concat([dftest, df_00], axis =0)
+        df_dispp = pd.concat([df_dispp, dftest], axis=0)
+        
+    df_dispp['avgdisplacementbetweenpause'] = pd.to_numeric(df_dispp['avgdisplacementbetweenpause'])
+            
+    return df_dispp
+
+#how much they walk before a pause
+
+def boutdisplacement(dfexpt):
+    import pandas as pd
+    import numpy as np
+    
+    dfr = dfexpt.iloc[:,2:]
+    velp = pd.DataFrame()
+    
+    for v2 in range(3,len(dfr.columns),5): #change this number if you add more parameters
+        velp = pd.concat([velp, dfr.iloc[:,v2], dfr.iloc[:,v2+1]], axis = 1)
+
+    velplst = []
+    gentype = []
+
+    for n in velp.columns[::2]:
+        velplst.append(n.split("_")[1])
+        gentype.append(n.split(" ")[0])
+
+    newspeed = pd.DataFrame()
+
+    for n,k in zip(velplst, gentype):
+        newspeed[k + " Perioddisp_" + n] = [np.nan]*len(velp)
+        newspeed.loc[(velp[k + " Pausecount_" + n] ==0), [k + " Perioddisp_" + n]] = (velp[k + " Velocity_" + n])*0.2
+    newspeed
+
+    newspeed = pd.concat([dfexpt.iloc[:,0:2], newspeed], axis = 1)
+    
+    return newspeed
+
+#straightness index calculations
+def straightnessindexmeter(dft, genre):
+    import pandas as pd
+    import numpy as np
+    
+    phase = ['Dark', 'Full']
+
+    dfstraighttotal = pd.DataFrame()
+
+    for x in phase:
+        df_x = dft[(dft['ExperimentState']== str(x))] 
+        t1 = distpersec(df_x).iloc[:,2:]
+        t2 = disppersec(df_x).iloc[:,2:] 
+        v = t1.values/t2.values
+        straightnessindex = pd.DataFrame(v, index=t1.index, columns=t1.columns).replace(np.inf, np.nan)
+        sim = pd.DataFrame(data = straightnessindex.mean(axis=0), columns = ['averagestraightnessindex'])
+        # sim = pd.melt(straightnessindex, var_name = "index", value_name = 'straightnessindex')
+        sim['ExperimentState'] = x
+        sim["Type"]= genre
+        sim['genre']= str(x)+ " " + str(genre)
+        dfstraighttotal = pd.concat([dfstraighttotal, sim], axis = 0)
+    return dfstraighttotal.reset_index(drop=False)
+
+#distance per sec
+
+def distpersec (dfexpt):
+    import pandas as pd
+    import numpy as np
+    
+    dfnewt = dfexpt.iloc[::5,:].reset_index(drop=True)
+    dfnewt.drop(dfnewt.filter(regex='Fall_.*|Velocity_.*|Pausecount_.*').columns, axis=1, inplace=True)
+
+    dfnewt3 = dfnewt.iloc[:,2:].copy()
+    distsec = pd.DataFrame()
+    for v2 in range(0,len(dfnewt3.columns),2):
+        dfnewt4= pd.DataFrame()
+        #assining name
+        naming = (dfnewt3.iloc[:,v2]).name
+        arraynum = naming.split("_")[1]
+        
+        dfnewt4 = pd.concat([dfnewt3.iloc[:,v2], dfnewt3.iloc[:,v2+1]], axis = 1)
+        distsec["Dist_" + str(arraynum)] = np.linalg.norm(dfnewt4.diff(axis=0), axis=1)
+    distsec = pd.concat([dfnewt.iloc[:,0:2], distsec], axis = 1).reset_index(drop=True)
+    
+    return distsec
+    
+
+# for dispplacement per sec
+def sectioneddispchunks(chunklist, dfdist):
+    import pandas as pd
+    import numpy as np
+
+    sliced = pd.DataFrame()
+    for nn in chunklist:  
+        nnum = round(nn,1)
+        sliced = pd.concat([sliced, dfdist[dfdist['Seconds'] ==nnum]], axis = 0)
+        
+    df_slice = pd.DataFrame()   
+
+    test = sliced.iloc[:,1:]
+    for v2 in range(0,len(test.columns),3):
+        dfnewt4= pd.DataFrame()
+        naming = (test.iloc[:,v2]).name
+        arraynum = naming.split("_")[1]   
+        dfnewt4 = pd.concat([test.iloc[:,v2], test.iloc[:,v2+1]], axis = 1)
+        if sum(test.iloc[:,v2+2])==0.0: #accounting if there is a fall, do not calculate displacement for that moment
+            linalg_variable = np.linalg.norm(dfnewt4.diff(axis=0), axis=1)
+            if np.nansum(linalg_variable) < 1.0:  #if sum of displacement events is less than 0, do not want
+                df_slice["Disp_" + str(arraynum)] = np.nan
+            else:
+                df_slice["Disp_" + str(arraynum)] = linalg_variable
+        else:
+            df_slice["Disp_" + str(arraynum)] = np.nan
+
+    df_slice2 = df_slice.sum(axis=0).to_frame().T
+    return df_slice2
+    
+
+def disppersec(dftest):
+    import pandas as pd
+    import numpy as np
+    import math
+    distancevelo  = dftest.filter(regex='X_.*|Y_.*|Fall_.*')
+    dfdist = pd.concat([round(dftest['Seconds'],1), distancevelo], axis =1)
+    listsecondsnumber = list(range(int(dftest['Seconds'].iloc[0]),math.floor(dftest['Seconds'].iloc[-1])))
+    df_sumdisp = pd.DataFrame()
+
+    for n in listsecondsnumber:
+        arraylist = list(np.linspace(n,n+1,6))
+        df_sumdisp = pd.concat([df_sumdisp, sectioneddispchunks(arraylist, dfdist)], axis = 0).reset_index(drop=True)
+        
+    df_sumdisp = df_sumdisp.shift(periods=1)
+    tempsecondslist = dftest.iloc[::5, 0:2].reset_index(drop=True)
+    df_sumdisp = pd.concat([tempsecondslist, df_sumdisp], axis = 1).reset_index(drop=True)
+
+    return df_sumdisp
+
+def boutheight(dfexpt):
+    import pandas as pd
+    import numpy as np
+    
+    dfr = dfexpt.iloc[:,2:]
+    velp = pd.DataFrame()
+    
+    for v2 in range(1,len(dfr.columns),5): #change this number if you add more parameters
+        velp = pd.concat([velp, dfr.iloc[:,v2], dfr.iloc[:,v2+3]], axis = 1)
+
+    velplst = []
+    gentype = []
+
+    for n in velp.columns[::2]:
+        velplst.append(n.split("_")[1])
+        gentype.append(n.split(" ")[0])
+
+    newspeed = pd.DataFrame()
+
+    for n,k in zip(velplst, gentype):
+        newspeed[k + " Height_" + n] = [np.nan]*len(velp)
+        newspeed.loc[(velp[k + " Pausecount_" + n] ==0), [k + " Height_" + n]] = velp[k + " Y_" + n]
+
+    newspeed = pd.concat([dfexpt.iloc[:,0:2], newspeed], axis = 1)
+    
+    return newspeed
+
+def pauseheight(dfexpt):
+    import pandas as pd
+    import numpy as np
+    
+    dfr = dfexpt.iloc[:,2:]
+    velp = pd.DataFrame()
+    
+    for v2 in range(1,len(dfr.columns),5): #change this number if you add more parameters
+        velp = pd.concat([velp, dfr.iloc[:,v2], dfr.iloc[:,v2+3]], axis = 1)
+
+    velplst = []
+    gentype = []
+
+    for n in velp.columns[::2]:
+        velplst.append(n.split("_")[1])
+        gentype.append(n.split(" ")[0])
+
+    newspeed = pd.DataFrame()
+
+    for n,k in zip(velplst, gentype):
+        newspeed[k + " Height_" + n] = [np.nan]*len(velp)
+        newspeed.loc[(velp[k + " Pausecount_" + n] ==1), [k + " Height_" + n]] = velp[k + " Y_" + n]
+
+    newspeed = pd.concat([dfexpt.iloc[:,0:2], newspeed], axis = 1)
+    
+    return newspeed
+
+def bheight(dfexpt, dfwt):
+    import pandas as pd
+    import numpy as np
+    
+    df_se = velodabest(dfexpt, "Expt", "Height")
+    df_sw = velodabest(dfwt, "WT", "Height")
+    
+    fgt6=pd.DataFrame()
+    fgt6 = pd.concat([df_se, df_sw]).reset_index(drop=False)
+    fgt6['genre'] = fgt6['ExperimentState'] + " " + fgt6['Type']
+
+    return fgt6
+
+def disptravel (dft, light, genre):    
+    import pandas as pd
+    import numpy as np
+
+    totaltravel = pd.DataFrame()
+
+    totaldisptravelled = pd.DataFrame()
+    dispdf = (dft.filter(regex="Velocity.*"))*0.2
+    totaldisptravelled = dispdf.sum(axis= 0)
+
+    lstdisp = totaldisptravelled.index.tolist()
+    lstdisp = [s.replace("Velocity", "disp") for s in lstdisp]
+
+    totaldisptravelled.index = lstdisp
+
+    
+    totaltravel['displacement'] = totaldisptravelled
+    totaltravel["ExperimentState"] = light
+    totaltravel["Type"] = genre
+    totaltravel['genre'] = light + " " + genre
+    
+
+    return totaltravel.reset_index()
+
+def totaldisp(dft, genre):
+    import pandas as pd
+    import numpy as np
+    
+    df_dark = dft[(dft['ExperimentState']== 'Dark')] 
+    df_light = dft[(dft['ExperimentState']== 'Full')] 
+    df_rec = dft[(dft['ExperimentState']== 'Recovery')]
+    
+    dispdark  = disptravel(df_dark, "Dark", genre)
+    displight  = disptravel(df_light, "Full", genre)
+    disprec = disptravel(df_rec, "Recovery", genre)
+    
+    totaldisp = pd.concat([dispdark, displight, disprec], axis = 0).reset_index(drop=True)
+    
+    return totaldisp   
+
+#BOUTspeed
+def bspeed(dfexpt, dfwt):
+    import pandas as pd
+    import numpy as np
+    df_se = velodabest(dfexpt, "Expt", "BSpeed")
+    df_sw = velodabest(dfwt, "WT", "BSpeed")
+    
+    fgt6=pd.DataFrame()
+    fgt6 = pd.concat([df_se, df_sw]).reset_index(drop=False)
+    fgt6['genre'] = fgt6['ExperimentState'] + " " + fgt6['Type']
+
+    return fgt6
+
+#BOUT AND PAUSE CALCULATIONS
+def pausenumber (df1, genotype, genre):# genre = either pause or bout
+    import pandas as pd
+    import numpy as np    
+       
+    df = pd.DataFrame()  
+    
+    for n in df1.columns[1:]:
+        if n.split("_")[0] == "w1118":
+            type1 = "WT"
+        if n.split("_")[0] == genotype:
+            type1 = "Expt"
+        tempnumber = pd.DataFrame()
+        tempnumber[genre] = df1[n]
+        tempnumber["Type"] = type1 #genre
+        tempnumber["behavior"] = n.split("_")[1] #behavior
+        tempnumber["ExperimentState"] = n.split("_")[2] #state
+        tempnumber['index'] = df1[n.split("_")[0] + '_index']
+        
+        df = pd.concat([df, tempnumber], axis = 0)
+            
+    deltadf =  df[df["behavior"]== genre]
+
+    dfdiff = deltaversion(deltadf, genotype, genre)
+    
+    return dfdiff
+
+def boutspeed(dfexpt):
+    import pandas as pd
+    import numpy as np 
+    
+    dfr = dfexpt.iloc[:,2:]
+    velp = pd.DataFrame()
+    for v2 in range(3,len(dfr.columns),5): #change this number if you add more parameters
+        velp = pd.concat([velp, dfr.iloc[:,v2], dfr.iloc[:,v2+1]], axis = 1)
+
+    velplst = []
+    gentype = []
+
+    for n in velp.columns[::2]:
+        velplst.append(n.split("_")[1])
+        gentype.append(n.split(" ")[0])
+
+    newspeed = pd.DataFrame()
+
+    for n,k in zip(velplst, gentype):
+        newspeed[k + " BSpeed_" + n] = [np.nan]*len(velp)
+        newspeed.loc[(velp[k + " Pausecount_" + n] ==0), [k + " BSpeed_" + n]] = velp[k + " Velocity_" + n]
+
+    newspeed = pd.concat([dfexpt.iloc[:,0:2], newspeed], axis = 1)
+    
+    return newspeed
+
+def countval(data, value):  #value = pause events
+    import pandas as pd
+    import numpy as np 
+    import itertools
+    
+    count = 0
+    timelst =[]
+    for key, group in itertools.groupby(data, lambda x: x == value ):
+        groupAsList = list(group)
+        if( key == True ):
+            count += 1
+            timed = 0.2*len(groupAsList)
+            timelst.append(timed)
+
+        
+    return (count, timelst)
+
+def behavior (dfp):
+    import pandas as pd
+    import numpy as np 
+    
+    pc = dfp.filter(regex="Pausecount_.*")
+    countpause = []
+    countbout = []
+    pcpause = pd.DataFrame()
+    pcbout = pd.DataFrame()
+
+    for n in pc:
+        pc9 = pd.DataFrame()
+        counter1, pausetime = countval(pc[n], 1) #pause = 1
+        counter0, bouttime = countval(pc[n], 0) #bout = 0
+        
+        countpause.append(counter1)
+        countbout.append(counter0)
+        
+        pcpause = pd.concat([pcpause, pd.Series(pausetime, dtype='float64')], ignore_index = True, axis = 1)
+        pcbout = pd.concat([pcbout, pd.Series(bouttime, dtype='float64')], ignore_index = True, axis = 1)
+
+    return countpause, countbout, pcpause, pcbout
+
+def boutanalysis(df_dark, phase) : 
+    import pandas as pd #genre is either w1118, or driver line
+    import numpy as np 
+    
+    countpause, countbout, pausedark, boutdark = behavior(df_dark)
+    
+    #avg paus time per fly (Mean Activity time spent per fly)
+    meanpdark = pausedark.mean(axis = 0)
+    meanbdark = boutdark.mean(axis = 0)
+    meandarkevent = pd.DataFrame({"Pauses_" + phase: meanpdark, "Bouts_" + phase: meanbdark})
+    #meandarkevent['index'] = genre + '_'+ meandarkevent['index'].astype(str)
+    
+    #time per activity (raw_marker_size=0.5 ,swarm_label= "Time spent per activity")
+    pausedarkdf = pausedark.melt().drop(['variable'], axis =1).dropna(axis = "index")
+    boutdarkdf = boutdark.melt().drop(['variable'], axis =1).dropna(axis = "index")
+    timedarkevent = pd.DataFrame({"Pauses_" + phase: pausedarkdf['value'], "Bouts_" + phase: boutdarkdf['value']})
+    #timedarkevent['index'] = genre + '_' + timedarkevent['index'].astype(str)
+    
+    #occurences
+    countevent = pd.DataFrame({"Pauses_" + phase: countpause, "Bouts_" + phase: countbout})
+    #countevent['index'] = genre + '_' + countevent['index'].astype(str)
+    
+    return countevent, meandarkevent, timedarkevent
+
+def pausecomp(dft, genre): #genre is either w1118, or driver line
+    import pandas as pd
+    import numpy as np 
+    
+    df_dark = dft[(dft['ExperimentState']== 'Dark')]  #no longer accounting for assimilation time
+    df_light = dft[(dft['ExperimentState']== 'Full')] 
+    df_rec = dft[(dft['ExperimentState']== 'Recovery')]
+    
+    countdark, meandarkevent, timedarkevent  = boutanalysis(df_dark, "Dark")
+    countlight, meanlightevent, timelightevent  = boutanalysis(df_light, "Full")
+    countrec, meanrecevent, timerecevent  = boutanalysis(df_rec, "Recovery")
+    
+    totalmeanevent = pd.concat([meandarkevent, meanlightevent, meanrecevent], axis =1)
+    totalmeanevent = totalmeanevent.add_prefix(genre + "_")
+    totalmeanevent = totalmeanevent.reset_index(drop=False)
+    totalmeanevent['index'] = genre + '_'+ totalmeanevent['index'].astype(str)
+    totalmeanevent = totalmeanevent.rename(columns = {"index": genre + "_index"})
+    # totaltimeevent = pd.concat([timedarkevent, timelightevent, timerecevent], axis =1)
+    # totaltimeevent = totaltimeevent.add_prefix(genre + "_")
+    
+    totalnumberevent = pd.concat([countdark, countlight, countrec], axis =1)
+    totalnumberevent = totalnumberevent.add_prefix(genre + "_")
+    totalnumberevent = totalnumberevent.reset_index(drop=False)
+    totalnumberevent['index'] = genre + '_'+ totalnumberevent['index'].astype(str)
+    totalnumberevent = totalnumberevent.rename(columns = {"index": genre + "_index"})
+    
+    return totalmeanevent, totalnumberevent
+
+
+#fallingoccurences
+def fallingocc(dfexpt, dfwt):
+    
+    awt5 = separation(dfexpt, dfwt, "Fall")
+    awt5['genre'] = awt5['ExperimentState'] + " " + awt5['Type']
+    awt5['value'] = 0
+    awt5.loc[(awt5['Fall'] >0), ['value']] = 1
+
+    return awt5
+
+def totalheight(dfexpt, dfwt):
+    
+    awt5 = separation(dfexpt, dfwt, "Y")
+    awt5['genre'] = awt5['ExperimentState'] + " " + awt5['Type']
+
+    return awt5
+
+
+def separation(dfexpt, dfwt, phrase):
+    import pandas as pd
+    import numpy as np 
+        
+    dfe_dark = dfexpt[(dfexpt['ExperimentState']== 'Dark')] 
+    dfe_full = dfexpt[(dfexpt['ExperimentState']== 'Full')] 
+    dfw_dark = dfwt[(dfwt['ExperimentState']== 'Dark')] 
+    dfw_full = dfwt[(dfwt['ExperimentState']== 'Full')] 
+    
+    filterword = phrase + ".*"
+    
+    expts = [dfe_dark, dfe_full, dfw_dark, dfw_full]
+    results = []
+    for e in expts:
+        filtereddf = e.filter(regex=filterword)
+    
+        match phrase:
+            case "Y":
+                result = getattr(filtereddf, "mean")(axis=0)
+            case "Fall":
+                result = getattr(filtereddf, "sum")(axis=0)/1
+                
+        results.append(result)
+        
+    awt=pd.DataFrame()
+    awt[phrase]= results[0]
+    awt['ExperimentState'] = "Dark"
+
+    awt2=pd.DataFrame()
+    awt2[phrase]=results[1]
+    awt2['ExperimentState'] = "Full"
+
+    awt2b = pd.concat([awt, awt2]).reset_index()
+    awt2b["Type"] = "Expt"
+
+
+    awt3=pd.DataFrame()
+    awt3[phrase]=results[2]
+    awt3['ExperimentState'] = "Dark"
+
+    awt4=pd.DataFrame()
+    awt4[phrase]=results[3]
+    awt4['ExperimentState'] = "Full"
+    awt4b = pd.concat([awt3, awt4]).reset_index()
+    awt4b["Type"] = "WT"
+    
+
+    awt5=pd.DataFrame()
+    awt5 = pd.concat([awt2b, awt4b])
+    
+    return awt5
+
+def timetype(dfwt, dfexpt):
+    import pandas as pd
+
+    
+    heightwt = maxheight(dfwt, "wt")
+    avgmaxheight_wt = heightwt['Max height wt'].mean() 
+
+    ce = timespentabovemeanline(dfexpt, avgmaxheight_wt, "Expt")
+    ce2 = timespentabovemeanline(dfwt, avgmaxheight_wt, "WT")
+
+    timehang = pd.DataFrame()
+    timehang = pd.concat([ce, ce2], axis = 0)
+    timehang['genre'] = timehang['ExperimentState'] + " " + timehang['Type']
+    
+    return timehang
+
+#overall speed
+
+def ospeed(dfwt, dfexpt):
+    import pandas as pd
+    
+    df_se = velodabest(dfexpt, "Expt", "Velocity")
+    df_sw = velodabest(dfwt, "WT", "Velocity")
+    
+    fgt6=pd.DataFrame()
+    fgt6 = pd.concat([df_se, df_sw]).reset_index(drop=False)
+    fgt6['genre'] = fgt6['ExperimentState'] + " " + fgt6['Type']
+    
+    return fgt6
+
+def deltaversion(df_sp, genotype, metric):
+    import pandas as pd
+    import dabest_jck
+
+    dfsp_db = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+    #dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
+    dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+                            experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
+    dfstatstest = dfsp_db2.delta_g.statistical_tests
+        
+    if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
+        dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.delta_g.delta_delta.difference,3)}, index = [genotype])
+
+
+    return (dfdiff)
+
+# def timeperiod(df, number):
+#     df1= pd.DataFrame()
+#     pos = int(number*5) #5fps
+#     df_dark = df[(df['ExperimentState']== 'Dark')].iloc[0:pos,:] 
+#     df_light = df[(df['ExperimentState']== 'Full')].iloc[0:pos,:] 
+#     df_rec = df[(df['ExperimentState']== 'Recovery')].iloc[0:pos,:] 
+    
+#     df1 =pd.concat([df_dark, df_light, df_rec], axis = 0)
+
+#     return df1.reset_index(drop=True)
