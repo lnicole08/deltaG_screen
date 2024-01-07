@@ -647,9 +647,9 @@ def pausenumber (df1, genotype, genre):# genre = either pause or bout
             
     deltadf =  df[df["behavior"]== genre]
 
-    dfdiff = deltaversion(deltadf, genotype, genre)
+    #dfdiff = deltaversion(deltadf, genotype, genre)
     
-    return dfdiff
+    return deltadf
 
 def boutspeed(dfexpt):
     import pandas as pd
@@ -874,7 +874,12 @@ def deltaversion(df_sp, genotype, metric):
     import pandas as pd
     import dabest_jck
 
-    dfsp_db = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+    df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+    name = []
+    if any(df6[metric].isnull()):
+        name = df6[df6[metric].isnull()]['index'].tolist()
+    dfsp_db = df6[~df6['index'].isin(name)]
+           
     #dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
     dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
