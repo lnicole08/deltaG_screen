@@ -843,10 +843,8 @@ def separation(dfexpt, dfwt, phrase):
 def timetype(dfwt, dfexpt):
     import pandas as pd
 
+    avgmaxheight_wt = float(86*0.75) #3/4 of max chamber height. chamber height is about 86mm
     
-    heightwt = maxheight(dfwt, "wt")
-    avgmaxheight_wt = heightwt['Max height wt'].mean() 
-
     ce = timespentabovemeanline(dfexpt, avgmaxheight_wt, "Expt")
     ce2 = timespentabovemeanline(dfwt, avgmaxheight_wt, "WT")
 
