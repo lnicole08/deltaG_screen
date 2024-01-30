@@ -298,8 +298,8 @@ def generation(df, driver):
     fps = frames(df)
     
     #falling occurence
-    dff_dark = df[(df['ExperimentState'] == 'Assimilation time - Dark') | (df['ExperimentState']== 'Dark')] 
-    dff_light = df[(df['ExperimentState'] == 'Assimilation time - Full') | (df['ExperimentState']== 'Full')] 
+    dff_dark = df[(df['ExperimentState'] == 'Assimilation time - Dark') | (df['ExperimentState']== 'Dark')].iloc[:-4]
+    dff_light = df[(df['ExperimentState'] == 'Assimilation time - Full') | (df['ExperimentState']== 'Full')].iloc[:-4]
     dff_rec = df[(df['ExperimentState']== 'Recovery')] 
     
     dff_d=fallso(dff_dark)
