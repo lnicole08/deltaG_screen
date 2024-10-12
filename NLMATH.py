@@ -107,7 +107,7 @@ def rastergraph(dfexpt):   #obsolete
     
         df_test = dftot.copy()
         dfuu = pd.DataFrame()
-        for r in dftot.iloc[:,2:].columns:
+        for r in dftot.iloc[:,1:].columns:
             df_temp = pd.DataFrame()
             df_temp['Time ' + r] = [0]*len(dftot)
             df_test = pd.concat([df_test,df_temp], axis = 1)
