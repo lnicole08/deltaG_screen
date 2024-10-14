@@ -870,7 +870,7 @@ def ospeed(dfwt, dfexpt):
 
 def deltaversion(df_sp, genotype, metric):
     import pandas as pd
-    import dabest_jck
+    import dabest
 
     df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
     name = []
@@ -878,8 +878,8 @@ def deltaversion(df_sp, genotype, metric):
         name = df6[df6[metric].isnull()]['index'].tolist()
     dfsp_db = df6[~df6['index'].isin(name)]
            
-    #dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
-    dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+    #dfsp_db2 = dabest.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
     dfstatstest = dfsp_db2.delta_g.statistical_tests
         
@@ -899,3 +899,58 @@ def deltaversion(df_sp, genotype, metric):
 #     df1 =pd.concat([df_dark, df_light, df_rec], axis = 0)
 
 #     return df1.reset_index(drop=True)
+
+def positional_arguments(dfexpt, driver):
+    import pandas as pd
+    import numpy as np
+
+    dftest = dfexpt.copy()
+    dff_dark = dftest[(dftest['ExperimentState']== 'Dark')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_light = dftest[(dftest['ExperimentState']== 'Full')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_rec = dftest[(dftest['ExperimentState']== 'Recovery')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)    
+    
+    if (driver == "w1118")|(driver == "WT"):
+        drivertype = "WT"
+        
+    else:
+        drivertype = "Expt"
+
+    listofdffs = [dff_dark, dff_light, dff_rec]
+    phases = ['Dark', 'Full', 'Recovery']
+    ascdesc15 = pd.DataFrame()
+    for nn, k in zip(listofdffs, phases):
+        ascdesc_df = pd.DataFrame()
+        
+        for v2 in range(0,len(nn.columns),4):
+            
+            ascdesc1 = pd.concat([nn.iloc[:,v2], nn.iloc[:,v2+1]], axis=1)
+            colname = nn.iloc[:,v2].name.split("_")[1] 
+
+            distancemeasurement = pd.DataFrame()
+            distancemeasurement['Distance'] = np.linalg.norm(ascdesc1.diff(axis=0), axis=1)
+            
+            Directionalchallenges = pd.DataFrame()
+            Directionalchallenges['Direction'] = [0]*len(nn)
+            Directionalchallenges['Falls and Pause'] = nn.iloc[:,v2+2] + nn.iloc[:,v2+3] #sum of pause and fall events into one column   
+            
+            Directionalchallenges.loc[(ascdesc1.diff(axis=0).iloc[:,1]>0.0), ['Direction']] = 1  #ascending
+            Directionalchallenges.loc[((ascdesc1.diff(axis=0).iloc[:,1]<0.0)&(ascdesc1.diff(axis=0).iloc[:,1]>-4.94)), ['Direction']] = -1  #fall height is recorded to be larger than 4.94 in the negative direction
+            Directionalchallenges.loc[(Directionalchallenges['Falls and Pause']>0.0), ['Direction']] = 0  #if a fall or pause has been recorded, it would be either as 1, or 2, and thus more than 0
+            
+            ascdesc1[driver + ' Ascendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1[driver + ' Descendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1.loc[(Directionalchallenges['Direction']==1), [driver + ' Ascendingdistance_' + str(colname)]] = distancemeasurement['Distance']
+            ascdesc1.loc[(Directionalchallenges['Direction']== -1), [driver + ' Descendingdistance_' + str(colname)]] = distancemeasurement['Distance']    
+
+            ascdesc_df = pd.concat([ascdesc_df, ascdesc1], axis=1)
+            
+            ascdesc2 = pd.DataFrame()
+            ascdesc2["Position"] = ascdesc_df.sum(axis=0).filter(regex = "Descendingdistance.*|Ascendingdistance.*")
+            ascdesc2["ExperimentState"] = k
+            ascdesc2["Type"] = drivertype
+            ascdesc2['genre'] = k + " " + drivertype
+            ascdesc2 = ascdesc2.reset_index(drop=False)
+            
+        ascdesc15 = pd.concat([ascdesc15, ascdesc2], axis=0).reset_index(drop=True)
+
+    return ascdesc15
