@@ -881,7 +881,7 @@ def deltaversion(df_sp, genotype, metric):
     #dfsp_db2 = dabest.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
     dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
-    dfstatstest = dfsp_db2.delta_g.statistical_tests
+    dfstatstest = dfsp_db2.mean_diff.statistical_tests  #change to delta_g if needed
         
     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
         dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.delta_g.delta_delta.difference,3)}, index = [genotype])
