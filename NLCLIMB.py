@@ -268,7 +268,7 @@ def speedcalc(df, fps):
             y1_D = df.iloc[ii,i+1] #0,2
             x2_D = df.iloc[ii+1,i] #1,1
             y2_D = df.iloc[ii+1,i+1] #1,2
-            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)
+            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)   #is actually speed
             displacement_list.append(displacement)
         temp[nama + " Velocity_" + k]= displacement_list
         df_disp = pd.concat([df_disp, temp], axis=1).reset_index(drop=True)
