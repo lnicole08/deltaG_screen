@@ -811,6 +811,6 @@ def violinfallgraph(df1, df2, df3, df4, driver):
     
     fig.update_yaxes(title='Second(s)',title_font=dict(size=20), range=[-10,30],tickvals=np.arange(-10,31,5))
     fig.update_xaxes(title='Phase',title_font=dict(size=20))
-    fig.update_layout(title = driver + "      Distribution of Falls", font=dict(family="ibm plex sans",size=14,),height=800, width=1700, hovermode='x unified', showlegend=False, violingap=0, violinmode='overlay')
+    fig.update_layout(title = driver + "      dispribution of Falls", font=dict(family="ibm plex sans",size=14,),height=800, width=1700, hovermode='x unified', showlegend=False, violingap=0, violinmode='overlay')
     
     return fig

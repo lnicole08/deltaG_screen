@@ -220,8 +220,8 @@ def fallso(df):
         fallo['Diff_' + kk] = df0[n] - df0[n].shift(1)
         fallo[fa + ' Fall_'+ kk ] = 0
         fallo.loc[(fallo['Diff_'+ kk ]<-4.94),[fa + ' Fall_'+ kk]] = 1   #determinant of fall height
-        # fallo['Distance_'+ kk]=0
-        # fallo.loc[(fallo['Diff_'+ kk]<-4.94),['Distance_'+ kk]] = fallo['Diff_'+kk]   #determinant of fall height
+        # fallo['displacement_'+ kk]=0
+        # fallo.loc[(fallo['Diff_'+ kk]<-4.94),['displacement_'+ kk]] = fallo['Diff_'+kk]   #determinant of fall height
         fall2 = pd.concat([fall2, fallo], axis = 1)
 
     fall2 = pd.concat([frontrow, fall2], axis=1)
@@ -254,10 +254,10 @@ def speedcalc(df, fps):
     
     indices = list(range(1,len(df.columns),2))
     rows = list(range(0,len(df)-1))
-    df_dist = pd.DataFrame()
+    df_disp = pd.DataFrame()
     
     for i,kk in zip(indices, range(1,len(indices)+1)):  #parsing through each object
-        distance_list =[]
+        displacement_list =[]
         temp = pd.DataFrame()
         k = str(kk)
         naming = df.iloc[:,i].name#series name  
@@ -268,19 +268,19 @@ def speedcalc(df, fps):
             y1_D = df.iloc[ii,i+1] #0,2
             x2_D = df.iloc[ii+1,i] #1,1
             y2_D = df.iloc[ii+1,i+1] #1,2
-            distance = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)
-            distance_list.append(distance)
-        temp[nama + " Velocity_" + k]= distance_list
-        df_dist = pd.concat([df_dist, temp], axis=1).reset_index(drop=True)
+            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)   #is actually speed
+            displacement_list.append(displacement)
+        temp[nama + " Velocity_" + k]= displacement_list
+        df_disp = pd.concat([df_disp, temp], axis=1).reset_index(drop=True)
 
         
     ca = 1/fps
 
-    df_dist.iloc[:,:] = df_dist.iloc[:,:]/ca      
+    df_disp.iloc[:,:] = df_disp.iloc[:,:]/ca      
     
-    df3 = pd.DataFrame([[np.nan] * len(df_dist.columns)], columns=df_dist.columns)
-    df2 = pd.concat([df3, df_dist], ignore_index=True)
-    #df2 = df3.concat(df_dist, ignore_index=True)
+    df3 = pd.DataFrame([[np.nan] * len(df_disp.columns)], columns=df_disp.columns)
+    df2 = pd.concat([df3, df_disp], ignore_index=True)
+    #df2 = df3.concat(df_disp, ignore_index=True)
     
     df2['Seconds'] = df['Seconds'].reset_index(drop=True)
     return df2
@@ -291,16 +291,17 @@ def generation(df, driver):
     import re
     from natsort import index_natsorted
     
-    Dark_phase_X_Y = separation(df, "Dark")
-    Light_phase_X_Y = separation(df, "Full")
+    Dark_phase_X_Y = separation(df, "Dark").iloc[:-4]
+    Light_phase_X_Y = separation(df, "Full").iloc[:-4]
     Rec_phase = separation(df, "Recovery")
     
     fps = frames(df)
     
     #falling occurence
-    dff_dark = df[(df['ExperimentState'] == 'Assimilation time - Dark') | (df['ExperimentState']== 'Dark')] 
-    dff_light = df[(df['ExperimentState'] == 'Assimilation time - Full') | (df['ExperimentState']== 'Full')] 
+    dff_dark = df[(df['ExperimentState'] == 'Assimilation time - Dark') | (df['ExperimentState']== 'Dark')].iloc[:-4]
+    dff_light = df[(df['ExperimentState'] == 'Assimilation time - Full') | (df['ExperimentState']== 'Full')].iloc[:-4]
     dff_rec = df[(df['ExperimentState']== 'Recovery')] 
+    consolidateddf = pd.concat([dff_dark, dff_light, dff_rec], axis=0).reset_index(drop=True) #added this line to remove the unncessary second after each phase
     
     dff_d=fallso(dff_dark)
     dff_l=fallso(dff_light)
@@ -308,7 +309,7 @@ def generation(df, driver):
     
     dfftot2 = pd.DataFrame()
     dfftot2 = pd.concat([dff_d, dff_l, dff_r])
-    dfftot3 = dfftot2.filter(regex = "Fall.*")
+    dfftot3 = dfftot2.filter(regex = "Fall.*").reset_index(drop=True)
     
     #speed
     df_speed_D =speedcalc(Dark_phase_X_Y, fps)
@@ -329,7 +330,7 @@ def generation(df, driver):
     
     #total
     dffnew = pd.DataFrame()
-    dffnew = pd.concat([dffnew, df], axis=1)
+    dffnew = pd.concat([dffnew, consolidateddf], axis=1)
     dffnew = pd.concat([dffnew, dfftot3], axis=1)
     dffnew = pd.concat([dffnew, dfst6], axis=1)
     dffnew = pd.concat([dffnew, df_pausetot], axis =1)
@@ -380,3 +381,14 @@ def generation(df, driver):
 
     return dfowo
 
+def fivesecondrule(dfexpt):
+    import pandas as pd
+    
+    number = 20.0  #how long of the dark/light phase i want to look at for
+    fivesecondsdark = dfexpt[(dfexpt['ExperimentState']== 'Dark')][dfexpt[(dfexpt['ExperimentState']== 'Dark')]['Seconds'].between(3.0, float(3.0+number), inclusive = "both")]
+    fivesecondsfull = dfexpt[(dfexpt['ExperimentState']== 'Full')][dfexpt[(dfexpt['ExperimentState']== 'Full')]['Seconds'].between(26.0, float(26.0+number), inclusive = "both")]
+    fivesecondsrecovery = dfexpt[(dfexpt['ExperimentState']== 'Recovery')][dfexpt[(dfexpt['ExperimentState']== 'Recovery')]['Seconds'].between(46.0, float(46.0+number), inclusive = "both")]
+
+    fiveseconddfs = pd.concat([fivesecondsdark, fivesecondsfull, fivesecondsrecovery]).reset_index(drop=True)
+
+    return fiveseconddfs
