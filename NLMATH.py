@@ -90,35 +90,35 @@ def violinfall(df, phase): #obsolete
     
     return dfuu
 
-# def rastergraph(dfexpt):   #obsolete
-#     import pandas as pd
+def rastergraph(dfexpt):   #obsolete
+    import pandas as pd
     
         
-#     phase= ["Dark", "Full", 'Recovery']
-#     dfn = pd.DataFrame()
-#     for n in phase:
-#         dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
-#         dftot = pd.DataFrame()
-#         if n == "Full":
-#             dta['Seconds'] -= 23
-#         if n == "Recovery":
-#             dta['Seconds'] -= 46       
-#         dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
+    phase= ["Dark", "Full", 'Recovery']
+    dfn = pd.DataFrame()
+    for n in phase:
+        dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
+        dftot = pd.DataFrame()
+        if n == "Full":
+            dta['Seconds'] -= 23
+        if n == "Recovery":
+            dta['Seconds'] -= 46       
+        dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
     
-#         df_test = dftot.copy()
-#         dfuu = pd.DataFrame()
-#         for r in dftot.iloc[:,2:].columns:
-#             df_temp = pd.DataFrame()
-#             df_temp['Time ' + r] = [0]*len(dftot)
-#             df_test = pd.concat([df_test,df_temp], axis = 1)
-#             df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
-#             df_test2= df_test.filter(regex="Time .*")
-#             dfuu = pd.melt(df_test2)
-#             dfuu["ExperimentState"] = n
-#         dfn = pd.concat([dfn, dfuu])
-#         dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
+        df_test = dftot.copy()
+        dfuu = pd.DataFrame()
+        for r in dftot.iloc[:,1:].columns:
+            df_temp = pd.DataFrame()
+            df_temp['Time ' + r] = [0]*len(dftot)
+            df_test = pd.concat([df_test,df_temp], axis = 1)
+            df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
+            df_test2= df_test.filter(regex="Time .*")
+            dfuu = pd.melt(df_test2)
+            dfuu["ExperimentState"] = n
+        dfn = pd.concat([dfn, dfuu])
+        dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
     
-#     return dfu2
+    return dfu2
 
 def velodabest(df, typeo, keyword):
     import pandas as pd
@@ -870,7 +870,7 @@ def ospeed(dfwt, dfexpt):
 
 def deltaversion(df_sp, genotype, metric):
     import pandas as pd
-    import dabest_jck
+    import dabest
 
     df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
     name = []
@@ -878,10 +878,10 @@ def deltaversion(df_sp, genotype, metric):
         name = df6[df6[metric].isnull()]['index'].tolist()
     dfsp_db = df6[~df6['index'].isin(name)]
            
-    #dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
-    dfsp_db2 = dabest_jck.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+    #dfsp_db2 = dabest.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
-    dfstatstest = dfsp_db2.delta_g.statistical_tests
+    dfstatstest = dfsp_db2.mean_diff.statistical_tests  #change to delta_g if needed
         
     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
         dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.delta_g.delta_delta.difference,3)}, index = [genotype])
@@ -899,3 +899,58 @@ def deltaversion(df_sp, genotype, metric):
 #     df1 =pd.concat([df_dark, df_light, df_rec], axis = 0)
 
 #     return df1.reset_index(drop=True)
+
+def positional_arguments(dfexpt, driver):
+    import pandas as pd
+    import numpy as np
+
+    dftest = dfexpt.copy()
+    dff_dark = dftest[(dftest['ExperimentState']== 'Dark')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_light = dftest[(dftest['ExperimentState']== 'Full')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_rec = dftest[(dftest['ExperimentState']== 'Recovery')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)    
+    
+    if (driver == "w1118")|(driver == "WT"):
+        drivertype = "WT"
+        
+    else:
+        drivertype = "Expt"
+
+    listofdffs = [dff_dark, dff_light, dff_rec]
+    phases = ['Dark', 'Full', 'Recovery']
+    ascdesc15 = pd.DataFrame()
+    for nn, k in zip(listofdffs, phases):
+        ascdesc_df = pd.DataFrame()
+        
+        for v2 in range(0,len(nn.columns),4):
+            
+            ascdesc1 = pd.concat([nn.iloc[:,v2], nn.iloc[:,v2+1]], axis=1)
+            colname = nn.iloc[:,v2].name.split("_")[1] 
+
+            distancemeasurement = pd.DataFrame()
+            distancemeasurement['Distance'] = np.linalg.norm(ascdesc1.diff(axis=0), axis=1)
+            
+            Directionalchallenges = pd.DataFrame()
+            Directionalchallenges['Direction'] = [0]*len(nn)
+            Directionalchallenges['Falls and Pause'] = nn.iloc[:,v2+2] + nn.iloc[:,v2+3] #sum of pause and fall events into one column   
+            
+            Directionalchallenges.loc[(ascdesc1.diff(axis=0).iloc[:,1]>0.0), ['Direction']] = 1  #ascending
+            Directionalchallenges.loc[((ascdesc1.diff(axis=0).iloc[:,1]<0.0)&(ascdesc1.diff(axis=0).iloc[:,1]>-4.94)), ['Direction']] = -1  #fall height is recorded to be larger than 4.94 in the negative direction
+            Directionalchallenges.loc[(Directionalchallenges['Falls and Pause']>0.0), ['Direction']] = 0  #if a fall or pause has been recorded, it would be either as 1, or 2, and thus more than 0
+            
+            ascdesc1[driver + ' Ascendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1[driver + ' Descendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1.loc[(Directionalchallenges['Direction']==1), [driver + ' Ascendingdistance_' + str(colname)]] = distancemeasurement['Distance']
+            ascdesc1.loc[(Directionalchallenges['Direction']== -1), [driver + ' Descendingdistance_' + str(colname)]] = distancemeasurement['Distance']    
+
+            ascdesc_df = pd.concat([ascdesc_df, ascdesc1], axis=1)
+            
+            ascdesc2 = pd.DataFrame()
+            ascdesc2["Position"] = ascdesc_df.sum(axis=0).filter(regex = "Descendingdistance.*|Ascendingdistance.*")
+            ascdesc2["ExperimentState"] = k
+            ascdesc2["Type"] = drivertype
+            ascdesc2['genre'] = k + " " + drivertype
+            ascdesc2 = ascdesc2.reset_index(drop=False)
+            
+        ascdesc15 = pd.concat([ascdesc15, ascdesc2], axis=0).reset_index(drop=True)
+
+    return ascdesc15

@@ -268,7 +268,7 @@ def speedcalc(df, fps):
             y1_D = df.iloc[ii,i+1] #0,2
             x2_D = df.iloc[ii+1,i] #1,1
             y2_D = df.iloc[ii+1,i+1] #1,2
-            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)
+            displacement = abs((((x2_D-x1_D)**2) + ((y2_D-y1_D)**2))**0.5)   #is actually speed
             displacement_list.append(displacement)
         temp[nama + " Velocity_" + k]= displacement_list
         df_disp = pd.concat([df_disp, temp], axis=1).reset_index(drop=True)
@@ -291,8 +291,8 @@ def generation(df, driver):
     import re
     from natsort import index_natsorted
     
-    Dark_phase_X_Y = separation(df, "Dark")
-    Light_phase_X_Y = separation(df, "Full")
+    Dark_phase_X_Y = separation(df, "Dark").iloc[:-4]
+    Light_phase_X_Y = separation(df, "Full").iloc[:-4]
     Rec_phase = separation(df, "Recovery")
     
     fps = frames(df)
@@ -301,6 +301,7 @@ def generation(df, driver):
     dff_dark = df[(df['ExperimentState'] == 'Assimilation time - Dark') | (df['ExperimentState']== 'Dark')].iloc[:-4]
     dff_light = df[(df['ExperimentState'] == 'Assimilation time - Full') | (df['ExperimentState']== 'Full')].iloc[:-4]
     dff_rec = df[(df['ExperimentState']== 'Recovery')] 
+    consolidateddf = pd.concat([dff_dark, dff_light, dff_rec], axis=0).reset_index(drop=True) #added this line to remove the unncessary second after each phase
     
     dff_d=fallso(dff_dark)
     dff_l=fallso(dff_light)
@@ -308,7 +309,7 @@ def generation(df, driver):
     
     dfftot2 = pd.DataFrame()
     dfftot2 = pd.concat([dff_d, dff_l, dff_r])
-    dfftot3 = dfftot2.filter(regex = "Fall.*")
+    dfftot3 = dfftot2.filter(regex = "Fall.*").reset_index(drop=True)
     
     #speed
     df_speed_D =speedcalc(Dark_phase_X_Y, fps)
@@ -329,7 +330,7 @@ def generation(df, driver):
     
     #total
     dffnew = pd.DataFrame()
-    dffnew = pd.concat([dffnew, df], axis=1)
+    dffnew = pd.concat([dffnew, consolidateddf], axis=1)
     dffnew = pd.concat([dffnew, dfftot3], axis=1)
     dffnew = pd.concat([dffnew, dfst6], axis=1)
     dffnew = pd.concat([dffnew, df_pausetot], axis =1)
