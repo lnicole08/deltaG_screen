@@ -868,48 +868,48 @@ def ospeed(dfwt, dfexpt):
     
     return fgt6
 
-def deltaversion(df_sp, genotype, metric):
-    import pandas as pd
-    import dabest
+# def deltaversion(df_sp, genotype, metric):
+#     import pandas as pd
+#     import dabest
 
-    df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
-    name = []
-    if any(df6[metric].isnull()):
-        name = df6[df6[metric].isnull()]['index'].tolist()
-    dfsp_db = df6[~df6['index'].isin(name)]
+#     df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+#     name = []
+#     if any(df6[metric].isnull()):
+#         name = df6[df6[metric].isnull()]['index'].tolist()
+#     dfsp_db = df6[~df6['index'].isin(name)]
            
-    #dfsp_db2 = dabest.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
-    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
-                            experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
-    dfstatstest = dfsp_db2.delta_g.statistical_tests  #change to delta_g if needed
+#     #dfsp_db2 = dabest.load(data = dfsp_db, x = ['ExperimentState', 'ExperimentState'], paired = "baseline", id_col="index", y = metric, delta2 = True, experiment = "Type", x1_level = ["Dark", "Full"], experiment_label = ["WT","Expt"] )
+#     dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+#                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) #if delta2 = dabest; deltaG = dabest_jck
+#     dfstatstest = dfsp_db2.delta_g.statistical_tests  #change to delta_g if needed
         
-    if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
-        dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.delta_g.delta_delta.difference,3)}, index = [genotype]) 
-        
-
-    return (dfdiff)
-
-
-def deltaversion_binary(df_sp, genotype, metric): #you run this because since all the binary data is at the same dimension, no standardization is required and empirical delta delta is sufficient
-    import pandas as pd
-    import dabest
-
-    df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
-    name = []
-    if any(df6[metric].isnull()):
-        name = df6[df6[metric].isnull()]['index'].tolist()
-    dfsp_db = df6[~df6['index'].isin(name)]
-
-
-    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
-                            experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) 
-    dfstatstest = dfsp_db2.mean_diff.statistical_tests  
-        
-    if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
-        dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.mean_diff.delta_delta.difference,3)}, index = [genotype]) #according to zinan, delta2 == deltag in meanddiff
+#     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
+#         dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.delta_g.delta_delta.difference,3)}, index = [genotype]) 
         
 
-    return (dfdiff)
+#     return (dfdiff)
+
+
+# def deltaversion_binary(df_sp, genotype, metric): #you run this because since all the binary data is at the same dimension, no standardization is required and empirical delta delta is sufficient
+#     import pandas as pd
+#     import dabest
+
+#     df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+#     name = []
+#     if any(df6[metric].isnull()):
+#         name = df6[df6[metric].isnull()]['index'].tolist()
+#     dfsp_db = df6[~df6['index'].isin(name)]
+
+
+#     dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+#                             experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) 
+#     dfstatstest = dfsp_db2.mean_diff.statistical_tests  
+        
+#     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
+#         dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.mean_diff.delta_delta.difference,3)}, index = [genotype]) #according to zinan, delta2 == deltag in meanddiff
+        
+
+#     return (dfdiff)
 
 # def timeperiod(df, number):
 #     df1= pd.DataFrame()
