@@ -868,7 +868,7 @@ def ospeed(dfwt, dfexpt):
     
     return fgt6
 
-def deltaversion(df_sp, metric, dfnaming):
+def deltaversion_deltag(df_sp, metric, dfnaming):
     import pandas as pd
     import dabest
 
@@ -888,7 +888,7 @@ def deltaversion(df_sp, metric, dfnaming):
         dfdiff = pd.DataFrame({dfnaming +"_bootstrap": dfsp_db2.hedges_g.delta_delta.bootstraps_delta_delta.tolist(), dfnaming +"_deltag": round(dfsp_db2.hedges_g.delta_delta.difference,3)})
     return (dfdiff)
 
-def deltaversion_binary(df_sp,metric, dfnaming): #you run this because since all the binary data is at the same dimension, no standardization is required and empirical delta delta is sufficient
+def deltaversion_meandiff(df_sp,metric, dfnaming): #you run this because since all the binary data is at the same dimension, no standardization is required and empirical delta delta is sufficient
     import pandas as pd
     import dabest
 
