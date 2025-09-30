@@ -904,7 +904,7 @@ def deltaversion_meandiff(df_sp,metric, dfnaming): #you run this because since a
         
     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
         #dfdiff = pd.DataFrame({"MBON": genotype, "WT": round(dfstatstest['difference'][0],3), "Expt": round(dfstatstest['difference'][1],3), "delta_g": round(dfsp_db2.mean_diff.delta_delta.difference,3), "g_bca_low": round(dfsp_db2.delta_g.delta_delta.bca_low,3), "g_bca_high": round(dfsp_db2.delta_g.delta_delta.bca_high,3)}, index = [ngenotype]) #according to zinan, delta2 == deltag in meanddiff
-        dfdiff = pd.DataFrame({dfnaming +"_bootstrap": dfsp_db2.mean_diff.delta_delta.bootstraps_delta_delta.tolist(), dfnaming +"_deltag": round(dfsp_db2.mean_diff.delta_delta.difference,3)})
+        dfdiff = pd.DataFrame({dfnaming +"_bootstrap": dfsp_db2.mean_diff.delta_delta.bootstraps_delta_delta.tolist(), dfnaming +"_meandiff": round(dfsp_db2.mean_diff.delta_delta.difference,3)})
 
     return (dfdiff)
 
