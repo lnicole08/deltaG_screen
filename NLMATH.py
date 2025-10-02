@@ -974,27 +974,26 @@ def positional_arguments(dfexpt, driver): #obsolete now
 
     return ascdesc15
 
-def log2speedratio(dfexpt, dfwt):
+def log2speedratio(df, metric): 
     import numpy as np
     import pandas as pd
-    
-    df_sp_expt = velodabest(dfexpt, "Expt", "Velocity")
-    df_sp_wt = velodabest(dfwt, "WT", "Velocity")
-    total_df = pd.DataFrame()
-    for n in [df_sp_expt, df_sp_wt]:
-        pivot_df = n.pivot(columns='ExperimentState', values='Velocity')
-        pivot_df['Log2 Speed_Ratio'] = np.log2(pivot_df['Full'] / pivot_df['Dark'])
-        pivot_df['Type'] = n.groupby(n.index)['Type'].first()
-        final_df = pivot_df[['Log2 Speed_Ratio', 'Type']]
-        
-        total_df = pd.concat([total_df, final_df])
-    
-    return total_df.reset_index(drop=False)
+    final_df = pd.DataFrame()
+    for phase in ['Expt', 'WT']:
+        pivot_df = pd.DataFrame()
+        pivot_df[metric] = np.log2(df[df['genre'] == 'Full ' + phase][metric].reset_index(drop=True)
+                                        / df[df['genre'] == 'Dark ' + phase][metric].reset_index(drop=True)
+                                        )
+        pivot_df['index'] = df[df['genre'] == 'Dark ' + phase]['index'].reset_index(drop=True)
+        pivot_df['Type'] = phase
+        final_df = pd.concat([final_df, pivot_df[['index', metric, 'Type']]])
+
+    return final_df.reset_index(drop=True)
 
 def singledelta(df, metric, dfnaming):
     import dabest
     import pandas as pd
     
     df_dbsingle = dabest.load(df, idx = ("Expt", "WT"), y = metric, x = 'Type')
-    df_singledelta = pd.DataFrame({dfnaming +"_bootstrap": df_dbsingle.mean_diff.results.bootstraps[0].tolist(), dfnaming +"_meandiff": round(float(df_dbsingle.mean_diff.results.difference),3)})
+    df_singledelta = pd.DataFrame({dfnaming +"_bootstrap": df_dbsingle.hedges_g.results.bootstraps[0].tolist(), dfnaming +"_hedgesg": round(float(df_dbsingle.hedges_g.results.difference),3)})
     return df_singledelta
+
