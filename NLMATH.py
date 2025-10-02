@@ -919,7 +919,7 @@ def deltaversion_meandiff(df_sp,metric, dfnaming): #you run this because since a
 
 #     return df1.reset_index(drop=True)
 
-def positional_arguments(dfexpt, driver):
+def positional_arguments(dfexpt, driver): #obsolete now
     import pandas as pd
     import numpy as np
 
@@ -973,3 +973,28 @@ def positional_arguments(dfexpt, driver):
         ascdesc15 = pd.concat([ascdesc15, ascdesc2], axis=0).reset_index(drop=True)
 
     return ascdesc15
+
+def log2speedratio(dfexpt, dfwt):
+    import numpy as np
+    import pandas as pd
+    
+    df_sp_expt = velodabest(dfexpt, "Expt", "Velocity")
+    df_sp_wt = velodabest(dfwt, "WT", "Velocity")
+    total_df = pd.DataFrame()
+    for n in [df_sp_expt, df_sp_wt]:
+        pivot_df = n.pivot(columns='ExperimentState', values='Velocity')
+        pivot_df['Log2 Speed_Ratio'] = np.log2(pivot_df['Full'] / pivot_df['Dark'])
+        pivot_df['Type'] = n.groupby(n.index)['Type'].first()
+        final_df = pivot_df[['Log2 Speed_Ratio', 'Type']]
+        
+        total_df = pd.concat([total_df, final_df])
+    
+    return total_df.reset_index(drop=False)
+
+def singledelta(df, metric, dfnaming):
+    import dabest
+    import pandas as pd
+    
+    df_dbsingle = dabest.load(df, idx = ("Expt", "WT"), y = metric, x = 'Type')
+    df_singledelta = pd.DataFrame({dfnaming +"_bootstrap": df_dbsingle.mean_diff.results.bootstraps[0].tolist(), dfnaming +"_meandiff": round(float(df_dbsingle.mean_diff.results.difference),3)})
+    return df_singledelta
