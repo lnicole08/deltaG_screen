@@ -63,62 +63,6 @@ def fallcalc(df, phase):
     
     return dff2
 
-def violinfall(df, phase): #obsolete
-    import pandas as pd
-    import numpy as np
-    
-    dffall = df.filter(regex="Fall.*")
-    dffall = pd.concat([df.iloc[:,0:2], dffall], axis=1)
-    dffall = dffall[(dffall["ExperimentState"] == phase)].reset_index(drop=True)
-    if phase == "Full":
-        dffall['Seconds']-=26
-    if phase == "Dark":
-        dffall['Seconds']-=3
-    if phase == "Recovery":
-        dffall['Seconds']-=46
-            
-    df_test = dffall.copy()
-    for r in dffall.iloc[:,2:].columns:
-        df_temp = pd.DataFrame()
-        df_temp['Time ' + r] = [0]*len(dffall)
-        df_test = pd.concat([df_test,df_temp], axis = 1)
-        df_test.loc[(dffall[r]>0), ['Time ' +r]] = df_test['Seconds']
-    df_test= df_test.filter(regex="Time .*")
-    df_test2 = pd.concat([dffall['ExperimentState'],df_test], axis = 1)
-    dfuu = pd.melt(df_test2, id_vars=['ExperimentState'])
-    dfuu= dfuu.replace(0.0, np.nan, regex=True)
-    
-    return dfuu
-
-def rastergraph(dfexpt):   #obsolete
-    import pandas as pd
-    
-        
-    phase= ["Dark", "Full", 'Recovery']
-    dfn = pd.DataFrame()
-    for n in phase:
-        dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
-        dftot = pd.DataFrame()
-        if n == "Full":
-            dta['Seconds'] -= 23
-        if n == "Recovery":
-            dta['Seconds'] -= 46       
-        dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
-    
-        df_test = dftot.copy()
-        dfuu = pd.DataFrame()
-        for r in dftot.iloc[:,1:].columns:
-            df_temp = pd.DataFrame()
-            df_temp['Time ' + r] = [0]*len(dftot)
-            df_test = pd.concat([df_test,df_temp], axis = 1)
-            df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
-            df_test2= df_test.filter(regex="Time .*")
-            dfuu = pd.melt(df_test2)
-            dfuu["ExperimentState"] = n
-        dfn = pd.concat([dfn, dfuu])
-        dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
-    
-    return dfu2
 
 def velodabest(df, typeo, keyword):
     import pandas as pd
@@ -131,15 +75,15 @@ def velodabest(df, typeo, keyword):
         dfsed = calcgraph(df, keywordnew)
         df_ff = dfsed[(dfsed['ExperimentState']== n)] 
         fgt = pd.DataFrame()
-        fgt[keyword]= df_ff.iloc[:,2:].mean(axis=0)
+        fgt[keyword]= df_ff.iloc[:,2:].mean(axis=0, skipna=True) #skips any values that has NaN so still retains other speeds since if even one frame has an error, the entire speed is recorded as nan
         fgt["ExperimentState"] = n
         fgt2b = pd.concat([fgt2b, fgt])
         
     fgt2b["Type"] = typeo
     
-    if any(fgt2b[keyword].isnull()):
-        value = fgt2b[fgt2b[keyword].isnull()].index.tolist()[0]
-        fgt2b = fgt2b.drop(index= value)
+    # if any(fgt2b[keyword].isnull()):
+    #     value = fgt2b[fgt2b[keyword].isnull()].index.tolist()[0]
+    #     fgt2b = fgt2b.drop(index= value)
     
     return fgt2b
 
@@ -997,3 +941,38 @@ def singledelta(df, metric, dfnaming):
     df_singledelta = pd.DataFrame({dfnaming +"_bootstrap": df_dbsingle.hedges_g.results.bootstraps[0].tolist(), dfnaming +"_hedgesg": round(float(df_dbsingle.hedges_g.results.difference),3)})
     return df_singledelta
 
+def simplemetricratio(df, metric): 
+    import pandas as pd
+    final_df = pd.DataFrame()
+    for phase in ['Expt', 'WT']:
+        pivot_df = pd.DataFrame()
+        pivot_df[metric] = (df[df['genre'] == 'Full ' + phase][metric].reset_index(drop=True)
+                                        / df[df['genre'] == 'Dark ' + phase][metric].reset_index(drop=True)
+                                        )
+        pivot_df['index'] = df[df['genre'] == 'Dark ' + phase]['index'].reset_index(drop=True)
+        pivot_df['Type'] = phase
+        final_df = pd.concat([final_df, pivot_df[['index', metric, 'Type']]])
+
+    return final_df.reset_index(drop=True)
+
+def boutindex(df, metric): 
+    import pandas as pd
+    import numpy as np
+    final_df = pd.DataFrame()
+    for phase in ['Expt', 'WT']:
+        pivot_df = pd.DataFrame()
+        light_values = df[df['genre'] == 'Full ' + phase][metric].reset_index(drop=True)
+        dark_values = df[df['genre'] == 'Dark ' + phase][metric].reset_index(drop=True)
+        
+        # Calculate bout index: (light - dark) / (light + dark)
+        total_values = light_values + dark_values
+        
+        # Handle cases where total = 0 (both light and dark are 0)
+        pivot_df[metric] = np.where(total_values > 0,
+            (light_values - dark_values) / total_values, np.nan)
+        
+        pivot_df['index'] = df[df['genre'] == 'Dark ' + phase]['index'].reset_index(drop=True)
+        pivot_df['Type'] = phase
+        final_df = pd.concat([final_df, pivot_df[['index', metric, 'Type']]])
+
+    return final_df.reset_index(drop=True)
