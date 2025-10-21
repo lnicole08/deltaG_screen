@@ -585,6 +585,7 @@ def pausenumber (df1, genotype, genre):# genre = either pause or bout
         tempnumber["Type"] = type1 #genre
         tempnumber["behavior"] = n.split("_")[1] #behavior
         tempnumber["ExperimentState"] = n.split("_")[2] #state
+        tempnumber['genre'] = n.split("_")[2] + " " + type1
         tempnumber['index'] = df1[n.split("_")[0] + '_index']
         
         df = pd.concat([df, tempnumber], axis = 0)
@@ -598,6 +599,7 @@ def pausenumber (df1, genotype, genre):# genre = either pause or bout
 def boutspeed(dfexpt):
     import pandas as pd
     import numpy as np 
+    import itertools
     
     dfr = dfexpt.iloc[:,2:]
     velp = pd.DataFrame()
@@ -649,7 +651,6 @@ def behavior (dfp):
     pcbout = pd.DataFrame()
 
     for n in pc:
-        pc9 = pd.DataFrame()
         counter1, pausetime = countval(pc[n], 1) #pause = 1
         counter0, bouttime = countval(pc[n], 0) #bout = 0
         
@@ -670,7 +671,7 @@ def boutanalysis(df_dark, phase) :
     #avg paus time per fly (Mean Activity time spent per fly)
     meanpdark = pausedark.mean(axis = 0)
     meanbdark = boutdark.mean(axis = 0)
-    meandarkevent = pd.DataFrame({"Pauses_" + phase: meanpdark, "Bouts_" + phase: meanbdark})
+    meanevent = pd.DataFrame({"Pauses_" + phase: meanpdark, "Bouts_" + phase: meanbdark})
     #meandarkevent['index'] = genre + '_'+ meandarkevent['index'].astype(str)
     
     #time per activity (raw_marker_size=0.5 ,swarm_label= "Time spent per activity")
@@ -683,7 +684,7 @@ def boutanalysis(df_dark, phase) :
     countevent = pd.DataFrame({"Pauses_" + phase: countpause, "Bouts_" + phase: countbout})
     #countevent['index'] = genre + '_' + countevent['index'].astype(str)
     
-    return countevent, meandarkevent, timedarkevent
+    return countevent, meanevent, timedarkevent
 
 def pausecomp(dft, genre): #genre is either w1118, or driver line
     import pandas as pd
@@ -918,18 +919,18 @@ def positional_arguments(dfexpt, driver): #obsolete now
 
     return ascdesc15
 
-def log2speedratio(df, metric): 
+def log2metric(df, metric): 
     import numpy as np
     import pandas as pd
     final_df = pd.DataFrame()
     for phase in ['Expt', 'WT']:
         pivot_df = pd.DataFrame()
-        pivot_df[metric] = np.log2(df[df['genre'] == 'Full ' + phase][metric].reset_index(drop=True)
+        pivot_df['log2 ' + metric] = np.log2(df[df['genre'] == 'Full ' + phase][metric].reset_index(drop=True)
                                         / df[df['genre'] == 'Dark ' + phase][metric].reset_index(drop=True)
                                         )
         pivot_df['index'] = df[df['genre'] == 'Dark ' + phase]['index'].reset_index(drop=True)
         pivot_df['Type'] = phase
-        final_df = pd.concat([final_df, pivot_df[['index', metric, 'Type']]])
+        final_df = pd.concat([final_df, pivot_df[['index', 'log2 ' + metric, 'Type']]])
 
     return final_df.reset_index(drop=True)
 
