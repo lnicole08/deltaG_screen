@@ -242,6 +242,7 @@ def pausing(df):
             k = str(k)
             nama = n.split(" ")[0]
             dfp[nama + ' Pausecount_' + k] = [0]*len(ss)
+            # Minimum speed threshold: flies with velocity < 2.19 mm/s are considered pausing (not moving)
             dfp.loc[(ss[n]<2.19),[nama + ' Pausecount_' + k]]= 1
     
     
