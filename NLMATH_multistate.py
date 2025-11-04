@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 30 11:22:10 2023
+Modified for multi-state comparisons (DARK-FULL, FULL-RECOVERY, DARK-RECOVERY)
 
 @author: lnico
 """
@@ -63,6 +64,63 @@ def fallcalc(df, phase):
     
     return dff2
 
+def violinfall(df, phase): #obsolete
+    import pandas as pd
+    import numpy as np
+    
+    dffall = df.filter(regex="Fall.*")
+    dffall = pd.concat([df.iloc[:,0:2], dffall], axis=1)
+    dffall = dffall[(dffall["ExperimentState"] == phase)].reset_index(drop=True)
+    if phase == "Full":
+        dffall['Seconds']-=26
+    if phase == "Dark":
+        dffall['Seconds']-=3
+    if phase == "Recovery":
+        dffall['Seconds']-=46
+            
+    df_test = dffall.copy()
+    for r in dffall.iloc[:,2:].columns:
+        df_temp = pd.DataFrame()
+        df_temp['Time ' + r] = [0]*len(dffall)
+        df_test = pd.concat([df_test,df_temp], axis = 1)
+        df_test.loc[(dffall[r]>0), ['Time ' +r]] = df_test['Seconds']
+    df_test= df_test.filter(regex="Time .*")
+    df_test2 = pd.concat([dffall['ExperimentState'],df_test], axis = 1)
+    dfuu = pd.melt(df_test2, id_vars=['ExperimentState'])
+    dfuu= dfuu.replace(0.0, np.nan, regex=True)
+    
+    return dfuu
+
+def rastergraph(dfexpt):   #obsolete
+    import pandas as pd
+    
+        
+    phase= ["Dark", "Full", 'Recovery']
+    dfn = pd.DataFrame()
+    for n in phase:
+        dta= dfexpt[(dfexpt['ExperimentState'] == n)].copy()
+        dftot = pd.DataFrame()
+        if n == "Full":
+            dta['Seconds'] -= 23
+        if n == "Recovery":
+            dta['Seconds'] -= 46       
+        dftot = pd.concat([dta['Seconds'], dta.filter(regex="Fall.*")], axis = 1).reset_index(drop=True)
+    
+        df_test = dftot.copy()
+        dfuu = pd.DataFrame()
+        for r in dftot.iloc[:,1:].columns:
+            df_temp = pd.DataFrame()
+            df_temp['Time ' + r] = [0]*len(dftot)
+            df_test = pd.concat([df_test,df_temp], axis = 1)
+            df_test.loc[(dftot[r]>0), ['Time ' +r]] = df_test['Seconds']
+            df_test2= df_test.filter(regex="Time .*")
+            dfuu = pd.melt(df_test2)
+            dfuu["ExperimentState"] = n
+        dfn = pd.concat([dfn, dfuu])
+        dfu2 = dfn[dfn['value'] > 0].reset_index(drop=True)  
+    
+    return dfu2
+
 def velodabest(df, typeo, keyword):
     import pandas as pd
     #typeo is either WT or EXPT
@@ -86,6 +144,116 @@ def velodabest(df, typeo, keyword):
     
     return fgt2b
 
+def maxheight(results, genre):
+    import pandas as pd
+    
+    yonly = pd.DataFrame()
+    df = results[(results['ExperimentState'] == 'Assimilation time - Dark') | (results['ExperimentState']== 'Dark')] 
+    yonly = pd.concat([df['Seconds'], df.filter(regex="Y.*")], axis = 1)
+    tacalc = pd.DataFrame()
+
+    maxilst=[]
+    timelst=[]
+
+    for b in yonly.columns[0:-1]:
+        maxi = yonly[b].max(axis=0)
+        indx = yonly[b].idxmax()
+        time = yonly.loc[indx,"Seconds"]
+        maxilst.append(maxi)
+        timelst.append(time)
+
+    tacalc['Max height '+ genre] = maxilst
+    tacalc["Time to reach max height " + genre]=timelst
+
+    return tacalc
+
+def timespentabovemeanline(dfexpt, avgmaxheight, phase):
+    import pandas as pd
+    
+    expt = pd.DataFrame()
+    expt = dfexpt.filter(regex = "Y.*")
+    expt = expt.reset_index(drop=True)
+    length = len(dfexpt[(dfexpt['ExperimentState'] == 'Assimilation time - Dark') | (dfexpt['ExperimentState']== 'Dark')])
+    ho2=pd.DataFrame()
+
+    for n,k in zip(expt.columns, range(1, len(expt.columns)+1)):
+        nno = pd.DataFrame()
+        nno[n] = expt[n]
+        nno['Time_'+ str(k)] = 0
+        nno.loc[(nno[n]>=0.75*avgmaxheight),['Time_'+ str(k)]] = 1
+        ho2 = pd.concat([ho2, nno], axis = 1)
+        
+    ce = pd.DataFrame()
+    #time they spend above avgmaxheight
+    ce["Time"] = ho2.filter(regex="Time.*").iloc[0:length,:].sum(axis=0)
+    ce["ExperimentState"] = "Dark"
+    
+    ef = pd.DataFrame()
+    ef["Time"] = ho2.filter(regex="Time.*").iloc[length:length+length,:].sum(axis=0)
+    ef["ExperimentState"] = "Full"
+    
+    ef6 = pd.DataFrame()
+    ef6["Time"] = ho2.filter(regex="Time.*").iloc[length+length::,:].sum(axis=0)
+    ef6["ExperimentState"] = "Recovery"
+    
+    eef = pd.DataFrame()
+    eef=pd.concat([ce,ef, ef6]).reset_index(drop=False)
+    eef['Type'] = phase
+    eef.iloc[:,1] = eef.iloc[:,1]*1/frames(dfexpt)
+    
+    return eef
+
+def timetoreach(dfexpt, avgmaxheight, phase): #obsolete
+    import pandas as pd
+        
+    expt = pd.DataFrame()
+    expt = dfexpt.filter(regex = "Y.*")
+    expt = expt.reset_index(drop=True)
+    length = len(dfexpt[(dfexpt['ExperimentState'] == 'Assimilation time - Dark') | (dfexpt['ExperimentState']== 'Dark')]) #supposedly 115
+
+    ho2=pd.DataFrame()
+    ho2['Seconds'] = dfexpt.loc[:,'Seconds']
+    for n,k in zip(expt.columns, range(1, len(expt.columns)+1)):
+        nno = pd.DataFrame()
+        nno[n] = expt[n]
+        nno['Time_'+ str(k)] = 0
+        nno.loc[(nno[n]>=0.75*avgmaxheight),['Time_'+ str(k)]] = 1
+        ho2 = pd.concat([ho2, nno], axis = 1)
+        
+        hoho = ho2.filter(regex="Time.*").iloc[0:length,:] #0 - 115
+        indx = hoho.idxmax()
+        time = ho2.loc[indx, 'Seconds']
+        
+        hohoho = ho2.filter(regex="Time.*").iloc[length:length+length,:].reset_index(drop=True) # 115-230
+        indx2 = hohoho.idxmax()
+        time2 = ho2.loc[indx2, 'Seconds']
+        
+        hoho3 = ho2.filter(regex="Time.*").iloc[length+length::,:].reset_index(drop=True) #230 - end
+        indx3 = hoho3.idxmax()
+        time3 = ho2.loc[indx3, 'Seconds']
+        
+    ce = pd.DataFrame()
+    ce["Time"] = time.reset_index(drop=True)
+    ce["ExperimentState"] = "Dark"
+    
+    ef = pd.DataFrame()
+    ef["Time"] = time2.reset_index(drop=True)
+    ef["ExperimentState"] = "Full"  
+    
+    eef = pd.DataFrame()
+    eef=pd.concat([ce,ef]).reset_index(drop=True)
+    
+    #eef['Time'] = eef['Time'].replace({'0':np.nan, 0:np.nan})
+    eef['Time'] = eef['Time'].replace({'0':23, 0:23})
+        
+    ef6 = pd.DataFrame()
+    ef6["Time"] = time3.reset_index(drop=True)
+    ef6["ExperimentState"] = "Recovery"
+    eef = pd.concat([eef, ef6]).reset_index(drop=False)
+    eef['Time'] = eef['Time'].replace({'0':46, 0:46})    
+    eef['Type'] = phase
+    
+    return eef
 
 def speedcalc(df, fps):
     import pandas as pd
@@ -157,7 +325,6 @@ def falldbest(df, name):
 
 #max velocity of each fly after assimilation phase
 
-
 def maxvelocity(df, genre):
     import pandas as pd
     
@@ -174,12 +341,79 @@ def maxvelocity(df, genre):
         df_max = pd.concat([df_max, df_maxvelocity], axis=0)
     return df_max
 
+def displacementbetweenpauses(df, genre):
+    import pandas as pd
+    import numpy as np
+    from statistics import mean
+    
+    df_dispp = pd.DataFrame()    
+    phases = ["Dark", "Full", "Recovery"]
+    df1 = boutdisplacement(df)
+    valuedflist = []
+    for phase in phases:
+        df47 = df1[(df1['ExperimentState']== str(phase))]
+        df46 = df47.filter(regex="Perioddisp_.*")
+        dftest =pd.DataFrame()
+        
+        for n in df46.columns:
+            df_list = []
+            df_00=pd.DataFrame()
+            df50 = df46[n]
+            x = (df50.shift(1).isnull() & df50.notnull()).cumsum()
+            
+            for i,g in df50.groupby(x):
+                h = g.dropna()
+                sumh = np.sum(h)
+                df_list.append(sumh)
+                          
+            vdflist = list(filter(lambda x: x != 0, df_list))
+            valuedflist = [mean(vdflist) if len(vdflist) > 0 else []]
+            data = {'avgdisplacementbetweenpause': valuedflist, 'ExperimentState': [phase], "Type": genre, 'genre': str(phase)+ " " + str(genre)}
+            index = [n]
+            df_00=pd.DataFrame(data, index = index)                
+            dftest = pd.concat([dftest, df_00], axis =0)
+        df_dispp = pd.concat([df_dispp, dftest], axis=0)
+        
+    df_dispp['avgdisplacementbetweenpause'] = pd.to_numeric(df_dispp['avgdisplacementbetweenpause'])
+            
+    return df_dispp
+
+#how much they walk before a pause
+
+def boutdisplacement(dfexpt):
+    import pandas as pd
+    import numpy as np
+    
+    dfr = dfexpt.iloc[:,2:]
+    velp = pd.DataFrame()
+    
+    for v2 in range(3,len(dfr.columns),5): #change this number if you add more parameters
+        velp = pd.concat([velp, dfr.iloc[:,v2], dfr.iloc[:,v2+1]], axis = 1)
+
+    velplst = []
+    gentype = []
+
+    for n in velp.columns[::2]:
+        velplst.append(n.split("_")[1])
+        gentype.append(n.split(" ")[0])
+
+    newspeed = pd.DataFrame()
+
+    for n,k in zip(velplst, gentype):
+        newspeed[k + " Perioddisp_" + n] = [np.nan]*len(velp)
+        newspeed.loc[(velp[k + " Pausecount_" + n] ==0), [k + " Perioddisp_" + n]] = (velp[k + " Velocity_" + n])*0.2
+    newspeed
+
+    newspeed = pd.concat([dfexpt.iloc[:,0:2], newspeed], axis = 1)
+    
+    return newspeed
+
 #straightness index calculations
 def straightnessindexmeter(dft, genre):
     import pandas as pd
     import numpy as np
     
-    phase = ['Dark', 'Full']
+    phase = ['Dark', 'Full', 'Recovery']
 
     dfstraighttotal = pd.DataFrame()
 
@@ -444,6 +678,98 @@ def boutspeed(dfexpt):
     
     return newspeed
 
+def countval(data, value):  #value = pause events
+    import pandas as pd
+    import numpy as np 
+    import itertools
+    
+    count = 0
+    timelst =[]
+    for key, group in itertools.groupby(data, lambda x: x == value ):
+        groupAsList = list(group)
+        if( key == True ):
+            count += 1
+            timed = 0.2*len(groupAsList)
+            timelst.append(timed)
+
+        
+    return (count, timelst)
+
+def behavior (dfp):
+    import pandas as pd
+    import numpy as np 
+    
+    pc = dfp.filter(regex="Pausecount_.*")
+    countpause = []
+    countbout = []
+    pcpause = pd.DataFrame()
+    pcbout = pd.DataFrame()
+
+    for n in pc:
+        pc9 = pd.DataFrame()
+        counter1, pausetime = countval(pc[n], 1) #pause = 1
+        counter0, bouttime = countval(pc[n], 0) #bout = 0
+        
+        countpause.append(counter1)
+        countbout.append(counter0)
+        
+        pcpause = pd.concat([pcpause, pd.Series(pausetime, dtype='float64')], ignore_index = True, axis = 1)
+        pcbout = pd.concat([pcbout, pd.Series(bouttime, dtype='float64')], ignore_index = True, axis = 1)
+
+    return countpause, countbout, pcpause, pcbout
+
+def boutanalysis(df_dark, phase) : 
+    import pandas as pd #genre is either w1118, or driver line
+    import numpy as np 
+    
+    countpause, countbout, pausedark, boutdark = behavior(df_dark)
+    
+    #avg paus time per fly (Mean Activity time spent per fly)
+    meanpdark = pausedark.mean(axis = 0)
+    meanbdark = boutdark.mean(axis = 0)
+    meandarkevent = pd.DataFrame({"Pauses_" + phase: meanpdark, "Bouts_" + phase: meanbdark})
+    #meandarkevent['index'] = genre + '_'+ meandarkevent['index'].astype(str)
+    
+    #time per activity (raw_marker_size=0.5 ,swarm_label= "Time spent per activity")
+    pausedarkdf = pausedark.melt().drop(['variable'], axis =1).dropna(axis = "index")
+    boutdarkdf = boutdark.melt().drop(['variable'], axis =1).dropna(axis = "index")
+    timedarkevent = pd.DataFrame({"Pauses_" + phase: pausedarkdf['value'], "Bouts_" + phase: boutdarkdf['value']})
+    #timedarkevent['index'] = genre + '_' + timedarkevent['index'].astype(str)
+    
+    #occurences
+    countevent = pd.DataFrame({"Pauses_" + phase: countpause, "Bouts_" + phase: countbout})
+    #countevent['index'] = genre + '_' + countevent['index'].astype(str)
+    
+    return countevent, meandarkevent, timedarkevent
+
+def pausecomp(dft, genre): #genre is either w1118, or driver line
+    import pandas as pd
+    import numpy as np 
+    
+    df_dark = dft[(dft['ExperimentState']== 'Dark')]  #no longer accounting for assimilation time
+    df_light = dft[(dft['ExperimentState']== 'Full')] 
+    df_rec = dft[(dft['ExperimentState']== 'Recovery')]
+    
+    countdark, meandarkevent, timedarkevent  = boutanalysis(df_dark, "Dark")
+    countlight, meanlightevent, timelightevent  = boutanalysis(df_light, "Full")
+    countrec, meanrecevent, timerecevent  = boutanalysis(df_rec, "Recovery")
+    
+    totalmeanevent = pd.concat([meandarkevent, meanlightevent, meanrecevent], axis =1)
+    totalmeanevent = totalmeanevent.add_prefix(genre + "_")
+    totalmeanevent = totalmeanevent.reset_index(drop=False)
+    totalmeanevent['index'] = genre + '_'+ totalmeanevent['index'].astype(str)
+    totalmeanevent = totalmeanevent.rename(columns = {"index": genre + "_index"})
+    # totaltimeevent = pd.concat([timedarkevent, timelightevent, timerecevent], axis =1)
+    # totaltimeevent = totaltimeevent.add_prefix(genre + "_")
+    
+    totalnumberevent = pd.concat([countdark, countlight, countrec], axis =1)
+    totalnumberevent = totalnumberevent.add_prefix(genre + "_")
+    totalnumberevent = totalnumberevent.reset_index(drop=False)
+    totalnumberevent['index'] = genre + '_'+ totalnumberevent['index'].astype(str)
+    totalnumberevent = totalnumberevent.rename(columns = {"index": genre + "_index"})
+    
+    return totalmeanevent, totalnumberevent
+
 
 #fallingoccurences
 def fallingocc(dfexpt, dfwt):
@@ -526,6 +852,20 @@ def separation(dfexpt, dfwt, phrase):
     
     return awt5
 
+def timetype(dfwt, dfexpt):
+    import pandas as pd
+
+    avgmaxheight_wt = float(86*0.75) #3/4 of max chamber height. chamber height is about 86mm
+    
+    ce = timespentabovemeanline(dfexpt, avgmaxheight_wt, "Expt")
+    ce2 = timespentabovemeanline(dfwt, avgmaxheight_wt, "WT")
+
+    timehang = pd.DataFrame()
+    timehang = pd.concat([ce, ce2], axis = 0)
+    timehang['genre'] = timehang['ExperimentState'] + " " + timehang['Type']
+    
+    return timehang
+
 #overall speed
 
 def ospeed(dfwt, dfexpt):
@@ -540,8 +880,50 @@ def ospeed(dfwt, dfexpt):
     
     return fgt6
 
-def deltaversion_multistate(df_sp, metric, dfnaming, comparison_type):
+def deltaversion(df_sp, metric, dfnaming):
+    """Original function for backward compatibility - only does DARK-FULL comparison"""
+    import pandas as pd
+    import dabest
 
+    df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+    name = []
+    if any(df6[metric].isnull()):
+        name = df6[df6[metric].isnull()]['index'].tolist()
+    dfsp_db = df6[~df6['index'].isin(name)]
+           
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+                            experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" )
+    dfstatstest = dfsp_db2.hedges_g.statistical_tests
+        
+    if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
+        dfdiff = pd.DataFrame({dfnaming +"_bootstrap": dfsp_db2.hedges_g.delta_delta.bootstraps_delta_delta.tolist(), dfnaming +"_deltag": round(dfsp_db2.hedges_g.delta_delta.difference,3)})
+    return (dfdiff)
+
+def deltaversion_binary(df_sp,metric, dfnaming):
+    """Original function for backward compatibility - only does DARK-FULL comparison"""
+    import pandas as pd
+    import dabest
+
+    df6 = df_sp[(df_sp['ExperimentState'] != "Recovery") ]
+    name = []
+    if any(df6[metric].isnull()):
+        name = df6[df6[metric].isnull()]['index'].tolist()
+    dfsp_db = df6[~df6['index'].isin(name)]
+
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+                            experiment_label = ['WT', 'Expt'], x1_level = ["Dark", "Full"], paired = "baseline", id_col="index" ) 
+    dfstatstest = dfsp_db2.mean_diff.statistical_tests  
+        
+    if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
+        dfdiff = pd.DataFrame({dfnaming +"_bootstrap": dfsp_db2.mean_diff.delta_delta.bootstraps_delta_delta.tolist(), dfnaming +"_deltag": round(dfsp_db2.mean_diff.delta_delta.difference,3)})
+
+    return (dfdiff)
+
+def deltaversion_multistate(df_sp, metric, dfnaming, comparison_type):
+    """
+    New function to handle comparisons between different state pairs including Recovery
+    comparison_type options: 'DARK-FULL', 'FULL-RECOVERY', 'DARK-RECOVERY'
+    """
     import pandas as pd
     import dabest
 
@@ -576,7 +958,10 @@ def deltaversion_multistate(df_sp, metric, dfnaming, comparison_type):
     return dfdiff
 
 def deltaversion_binary_multistate(df_sp, metric, dfnaming, comparison_type):
-
+    """
+    New function to handle binary comparisons between different state pairs including Recovery
+    comparison_type options: 'DARK-FULL', 'FULL-RECOVERY', 'DARK-RECOVERY'
+    """
     import pandas as pd
     import dabest
 
@@ -611,3 +996,58 @@ def deltaversion_binary_multistate(df_sp, metric, dfnaming, comparison_type):
 
     return dfdiff
 
+
+def positional_arguments(dfexpt, driver):
+    import pandas as pd
+    import numpy as np
+
+    dftest = dfexpt.copy()
+    dff_dark = dftest[(dftest['ExperimentState']== 'Dark')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_light = dftest[(dftest['ExperimentState']== 'Full')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)
+    dff_rec = dftest[(dftest['ExperimentState']== 'Recovery')].filter(regex='X_.*|Y_.*|Fall_.*|Pausecount_.*').reset_index(drop=True)    
+    
+    if (driver == "w1118")|(driver == "WT"):
+        drivertype = "WT"
+        
+    else:
+        drivertype = "Expt"
+
+    listofdffs = [dff_dark, dff_light, dff_rec]
+    phases = ['Dark', 'Full', 'Recovery']
+    ascdesc15 = pd.DataFrame()
+    for nn, k in zip(listofdffs, phases):
+        ascdesc_df = pd.DataFrame()
+        
+        for v2 in range(0,len(nn.columns),4):
+            
+            ascdesc1 = pd.concat([nn.iloc[:,v2], nn.iloc[:,v2+1]], axis=1)
+            colname = nn.iloc[:,v2].name.split("_")[1] 
+
+            distancemeasurement = pd.DataFrame()
+            distancemeasurement['Distance'] = np.linalg.norm(ascdesc1.diff(axis=0), axis=1)
+            
+            Directionalchallenges = pd.DataFrame()
+            Directionalchallenges['Direction'] = [0]*len(nn)
+            Directionalchallenges['Falls and Pause'] = nn.iloc[:,v2+2] + nn.iloc[:,v2+3] #sum of pause and fall events into one column   
+            
+            Directionalchallenges.loc[(ascdesc1.diff(axis=0).iloc[:,1]>0.0), ['Direction']] = 1  #ascending
+            Directionalchallenges.loc[((ascdesc1.diff(axis=0).iloc[:,1]<0.0)&(ascdesc1.diff(axis=0).iloc[:,1]>-4.94)), ['Direction']] = -1  #fall height is recorded to be larger than 4.94 in the negative direction
+            Directionalchallenges.loc[(Directionalchallenges['Falls and Pause']>0.0), ['Direction']] = 0  #if a fall or pause has been recorded, it would be either as 1, or 2, and thus more than 0
+            
+            ascdesc1[driver + ' Ascendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1[driver + ' Descendingdistance_' + str(colname)] = [0]*len(nn)
+            ascdesc1.loc[(Directionalchallenges['Direction']==1), [driver + ' Ascendingdistance_' + str(colname)]] = distancemeasurement['Distance']
+            ascdesc1.loc[(Directionalchallenges['Direction']== -1), [driver + ' Descendingdistance_' + str(colname)]] = distancemeasurement['Distance']    
+
+            ascdesc_df = pd.concat([ascdesc_df, ascdesc1], axis=1)
+            
+            ascdesc2 = pd.DataFrame()
+            ascdesc2["Position"] = ascdesc_df.sum(axis=0).filter(regex = "Descendingdistance.*|Ascendingdistance.*")
+            ascdesc2["ExperimentState"] = k
+            ascdesc2["Type"] = drivertype
+            ascdesc2['genre'] = k + " " + drivertype
+            ascdesc2 = ascdesc2.reset_index(drop=False)
+            
+        ascdesc15 = pd.concat([ascdesc15, ascdesc2], axis=0).reset_index(drop=True)
+
+    return ascdesc15
