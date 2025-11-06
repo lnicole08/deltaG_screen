@@ -540,6 +540,78 @@ def ospeed(dfwt, dfexpt):
     
     return fgt6
 
+def deltaversion_baseline_multistate(df_sp, metric, dfnaming, comparison_type):
+
+    import pandas as pd
+    import dabest
+
+    # Filter data based on comparison type
+    if comparison_type == 'DARK-FULL':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Recovery")]
+        x1_level = ["Dark", "Full"]
+    elif comparison_type == 'FULL-RECOVERY':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Dark")]
+        x1_level = ["Full", "Recovery"]
+    elif comparison_type == 'DARK-RECOVERY':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Full")]
+        x1_level = ["Dark", "Recovery"]
+    else:
+        raise ValueError("comparison_type must be 'DARK-FULL', 'FULL-RECOVERY', or 'DARK-RECOVERY'")
+    
+    name = []
+    if any(df6[metric].isnull()):
+        name = df6[df6[metric].isnull()]['index'].tolist()
+    dfsp_db = df6[~df6['index'].isin(name)]
+           
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+                            experiment_label = ['WT', 'Expt'], x1_level = x1_level, paired = "baseline", id_col="index" )
+    dfstatstest = dfsp_db2.hedges_g.results
+        
+    if dfstatstest['test'][1].split(" ")[1] == "Expt":
+        dfdiff = pd.DataFrame({
+            dfnaming + "_bootstrap": dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1]  == "Expt", "bootstraps"].values[0].tolist(), 
+            dfnaming + "_Hedgesg": round(dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "difference"][1],3),
+            "comparison_type": comparison_type
+        })
+    return dfdiff
+
+def deltaversion_binarybaseline_multistate(df_sp, metric, dfnaming, comparison_type):
+
+    import pandas as pd
+    import dabest
+
+    # Filter data based on comparison type
+    if comparison_type == 'DARK-FULL':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Recovery")]
+        x1_level = ["Dark", "Full"]
+    elif comparison_type == 'FULL-RECOVERY':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Dark")]
+        x1_level = ["Full", "Recovery"]
+    elif comparison_type == 'DARK-RECOVERY':
+        df6 = df_sp[(df_sp['ExperimentState'] != "Full")]
+        x1_level = ["Dark", "Recovery"]
+    else:
+        raise ValueError("comparison_type must be 'DARK-FULL', 'FULL-RECOVERY', or 'DARK-RECOVERY'")
+
+    name = []
+    if any(df6[metric].isnull()):
+        name = df6[df6[metric].isnull()]['index'].tolist()
+    dfsp_db = df6[~df6['index'].isin(name)]
+
+    dfsp_db2 = dabest.load(data = dfsp_db, x = ["ExperimentState", "Type"], y = metric,  delta2 = True, experiment = "Type",
+                            experiment_label = ['WT', 'Expt'], x1_level = x1_level, paired = "baseline", id_col="index" ) 
+    dfstatstest = dfsp_db2.mean_diff.results 
+        
+    if dfstatstest['test'][1].split(" ")[1] == "Expt":
+        dfdiff = pd.DataFrame({
+            dfnaming + "_bootstrap": dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "bootstraps"].values[0].tolist(), 
+            dfnaming + "_Hedgesg": round(dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "difference"][1],3),
+            "comparison_type": comparison_type
+        })
+
+    return dfdiff
+
+## comparison with WT states
 def deltaversion_multistate(df_sp, metric, dfnaming, comparison_type):
 
     import pandas as pd
