@@ -605,7 +605,7 @@ def deltaversion_binarybaseline_multistate(df_sp, metric, dfnaming, comparison_t
     if dfstatstest['test'][1].split(" ")[1] == "Expt":
         dfdiff = pd.DataFrame({
             dfnaming + "_bootstrap": dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "bootstraps"].values[0].tolist(), 
-            dfnaming + "_Hedgesg": round(dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "difference"][1],3),
+            dfnaming + "_meandiff": round(dfstatstest.loc[dfstatstest['test'].str.split(" ").str[1] == "Expt", "difference"][1],3),
             "comparison_type": comparison_type
         })
 
@@ -677,7 +677,7 @@ def deltaversion_binary_multistate(df_sp, metric, dfnaming, comparison_type):
     if dfstatstest['control'][0].split(" ")[1] == "WT" and dfstatstest['control'][1].split(" ")[1] == "Expt":
         dfdiff = pd.DataFrame({
             dfnaming + "_bootstrap": dfsp_db2.mean_diff.delta_delta.bootstraps_delta_delta.tolist(), 
-            dfnaming + "_deltag": round(dfsp_db2.mean_diff.delta_delta.difference,3),
+            dfnaming + "_meandiff": round(dfsp_db2.mean_diff.delta_delta.difference,3),
             "comparison_type": comparison_type
         })
 
