@@ -934,7 +934,7 @@ def positional_arguments(dfexpt, driver):
             Directionalchallenges['Falls and Pause'] = nn.iloc[:,v2+2] + nn.iloc[:,v2+3] #sum of pause and fall events into one column   
             
             Directionalchallenges.loc[(ascdesc1.diff(axis=0).iloc[:,1]>0.0), ['Direction']] = 1  #ascending
-            Directionalchallenges.loc[((ascdesc1.diff(axis=0).iloc[:,1]<0.0)&(ascdesc1.diff(axis=0).iloc[:,1]>-4.94)), ['Direction']] = -1  #fall height is recorded to be larger than 4.94 in the negative direction
+            Directionalchallenges.loc[((ascdesc1.diff(axis=0).iloc[:,1]<0.0)&(ascdesc1.diff(axis=0).iloc[:,1]>-3.17)), ['Direction']] = -1  # threshold derived from confusion matrix on 2025-12-26
             Directionalchallenges.loc[(Directionalchallenges['Falls and Pause']>0.0), ['Direction']] = 0  #if a fall or pause has been recorded, it would be either as 1, or 2, and thus more than 0
             
             ascdesc1[driver + ' Ascendingdistance_' + str(colname)] = [0]*len(nn)
