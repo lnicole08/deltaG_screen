@@ -219,9 +219,9 @@ def fallso(df):
         fallo = pd.DataFrame()
         fallo['Diff_' + kk] = df0[n] - df0[n].shift(1)
         fallo[fa + ' Fall_'+ kk ] = 0
-        fallo.loc[(fallo['Diff_'+ kk ]<-4.94),[fa + ' Fall_'+ kk]] = 1   #determinant of fall height
+        fallo.loc[(fallo['Diff_'+ kk ]<-3.17),[fa + ' Fall_'+ kk]] = 1   # threshold derived from confusion matrix on 2025-12-26
         # fallo['displacement_'+ kk]=0
-        # fallo.loc[(fallo['Diff_'+ kk]<-4.94),['displacement_'+ kk]] = fallo['Diff_'+kk]   #determinant of fall height
+        # fallo.loc[(fallo['Diff_'+ kk]<-3.17),['displacement_'+ kk]] = fallo['Diff_'+kk]   # threshold derived from confusion matrix on 2025-12-26
         fall2 = pd.concat([fall2, fallo], axis = 1)
 
     fall2 = pd.concat([frontrow, fall2], axis=1)
@@ -242,8 +242,7 @@ def pausing(df):
             k = str(k)
             nama = n.split(" ")[0]
             dfp[nama + ' Pausecount_' + k] = [0]*len(ss)
-            # Minimum speed threshold: flies with velocity < 2.19 mm/s are considered pausing (not moving)
-            dfp.loc[(ss[n]<2.19),[nama + ' Pausecount_' + k]]= 1
+            dfp.loc[(ss[n]<2.588),[nama + ' Pausecount_' + k]]= 1  # threshold derived from confusion matrix on 2025-12-26
     
     
     #dfp = pd.concat([frontrow, dfp], axis =1)
