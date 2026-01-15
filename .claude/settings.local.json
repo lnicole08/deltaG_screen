@@ -5,7 +5,9 @@
       "Bash(find:*)",
       "Bash(findstr:*)",
       "Bash(python -m pip show:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(python -c:*)"
     ],
     "deny": []
   }
