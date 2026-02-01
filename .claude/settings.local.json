@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:acclab.github.io)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(pip show:*)",
+      "Bash(findstr:*)",
+      "Bash(conda activate:*)",
+      "Bash(python:*)",
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\ACC Lab Dropbox\\\\ACC Lab\\\\Nicole Lee\\\\DATA\\\\OSAR_other\\\\other\\\\VT999036[Reverse] x Chrimson2\\\\countlog\\\\*Eighth*Chrimson2*'' | Select-Object Name, LastWriteTime\")"
     ],
     "deny": []
   }
