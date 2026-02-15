@@ -270,14 +270,14 @@ def falldbest(df, name):
 
 def maxvelocity(df, genre):
     import pandas as pd
-    
+
     phases = ["Dark", "Full"]
     df_max = pd.DataFrame()
     for phase in phases:
         df2 = df[(df['ExperimentState']== str(phase))]
         df_dark = df2.filter(regex="Velocity_.*")
         df_maxvelocity = pd.DataFrame()
-        df_maxvelocity['maxvelocity'] = df_dark.max(axis = 0)
+        df_maxvelocity['maxvelocity'] = df_dark.max(axis=0)
         df_maxvelocity['ExperimentState'] = phase
         df_maxvelocity['Type'] = genre
         df_maxvelocity['genre'] = str(phase)+ " " + str(genre)
@@ -938,7 +938,7 @@ def singledelta(df, metric, dfnaming):
     import dabest
     import pandas as pd
     
-    df_dbsingle = dabest.load(df, idx = ("Expt", "WT"), y = metric, x = 'Type')
+    df_dbsingle = dabest.load(df, idx = ("WT", "Expt"), y = metric, x = 'Type')
     df_singledelta = pd.DataFrame({dfnaming +"_bootstrap": df_dbsingle.hedges_g.results.bootstraps[0].tolist(), dfnaming +"_hedgesg": round(float(df_dbsingle.hedges_g.results.difference),3)})
     return df_singledelta
 
