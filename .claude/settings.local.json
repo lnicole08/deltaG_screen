@@ -8,7 +8,11 @@
       "Bash(pip show:*)",
       "Bash(python -m json.tool:*)",
       "Bash(python -c:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(awk 'NR>=940 && NR<=1310' \"C:/Users/User/Documents/GitHub/deltaG_screen/AsOPN3_forestplot_vertical_streamlined.ipynb\")",
+      "Read(//tmp/**)",
+      "Bash(where conda *)",
+      "Bash(C:/Users/User/anaconda3/python.exe *)"
     ],
     "deny": []
   }
