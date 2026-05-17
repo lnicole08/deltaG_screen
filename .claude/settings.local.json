@@ -12,7 +12,11 @@
       "Bash(awk 'NR>=940 && NR<=1310' \"C:/Users/User/Documents/GitHub/deltaG_screen/AsOPN3_forestplot_vertical_streamlined.ipynb\")",
       "Read(//tmp/**)",
       "Bash(where conda *)",
-      "Bash(C:/Users/User/anaconda3/python.exe *)"
+      "Bash(C:/Users/User/anaconda3/python.exe *)",
+      "PowerShell(conda env *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(& \"C:\\\\Users\\\\user\\\\anaconda3\\\\envs\\\\20250930version\\\\python.exe\" -m pip freeze)",
+      "PowerShell(& \"C:\\\\Users\\\\user\\\\anaconda3\\\\envs\\\\20250930version\\\\python.exe\" --version)"
     ],
     "deny": []
   }
