@@ -65,23 +65,6 @@ def find_number(df, lookup, col):
             vals.append(row[col])
     return ', '.join(list(set(vals)))
 
-def compress_mbon_label(label):
-    parts = [p.strip() for p in label.split(',')]
-    if len(parts) <= 1:
-        return label
-    prefix_match = re.match(r'^([A-Za-z]+)', parts[0])
-    if not prefix_match:
-        return label
-    prefix = prefix_match.group(1)
-    numbers = []
-    for p in parts:
-        m = re.match(r'^' + re.escape(prefix) + r'(\d+.*)$', p.strip())
-        if m:
-            numbers.append(m.group(1))
-        else:
-            return label
-    return prefix + ', '.join(numbers)
-
 def create_mbon_only_labels(mbons, lobelocation):
     if lobelocation is None or lobelocation.empty: return list(mbons)
     # First pass: get compressed MBON number for each mbon
@@ -90,7 +73,7 @@ def create_mbon_only_labels(mbons, lobelocation):
         info = lobelocation[lobelocation['MBON'] == mbon]
         if len(info) > 0:
             raw_number = str(info['MBON_number'].values[0])
-            label = compress_mbon_label(raw_number)
+            label = raw_number
             raw_labels.append(label if label and label != 'nan' else mbon)
         else:
             raw_labels.append(mbon)
@@ -115,7 +98,7 @@ def create_labels(mbons, lobelocation, sep='\n'):
         if len(info) > 0:
             #parts = [str(info['MBON_number'].values[0]), str(info['Lobe_location'].values[0]), mbon]
             raw_number = str(info['MBON_number'].values[0])
-            parts = [compress_mbon_label(raw_number)]
+            parts = [raw_number]
             labels.append(sep.join([p for p in parts if p and p != 'nan']) or mbon)
         else:
             labels.append(mbon)
