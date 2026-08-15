@@ -1,13 +1,12 @@
+import os
 import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-from collections import defaultdict
+from collections import Counter
 
 
-def load_bootstrap_data(data_path, responders=None, metrics=None):
-    metrics = metrics or METRICS
+def load_bootstrap_data(data_path, metrics, responders=None):
     all_data = {}
     
     for filename in [f for f in os.listdir(data_path) if f.endswith('_bootstrap.csv')]:
@@ -59,11 +58,12 @@ def get_mbons_by_number(data, responder, lobelocation):
     return sorted(list(mbons), key=sort_key)
 
 def find_number(df, lookup, col):
-    vals = []
-    for _, row in df.iterrows():
-        if lookup in [x.strip() for x in row['MBON names'].split(',')]:
-            vals.append(row[col])
-    return ', '.join(list(set(vals)))
+    vals = sorted({str(row[col]).strip() for _, row in df.iterrows()
+                   if lookup in [x.strip() for x in str(row['MBON names']).split(',')]})
+    pre = re.match(r'\D*', vals[0]).group() if vals else ''
+    if len(vals) > 1 and pre and all(v.startswith(pre) and v[len(pre):].isdigit() for v in vals):
+        return pre + ', '.join(v[len(pre):] for v in vals)
+    return ', '.join(vals)
 
 def create_mbon_only_labels(mbons, lobelocation):
     if lobelocation is None or lobelocation.empty: return list(mbons)
@@ -78,7 +78,6 @@ def create_mbon_only_labels(mbons, lobelocation):
         else:
             raw_labels.append(mbon)
     # Second pass: add _1, _2 suffixes only for duplicates
-    from collections import Counter
     counts = Counter(raw_labels)
     seen = {}
     labels = []

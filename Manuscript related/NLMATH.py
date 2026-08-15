@@ -448,7 +448,7 @@ def boutspeed(dfexpt):
 #fallingoccurences
 def fallingocc(dfexpt, dfwt):
     
-    awt5 = separation(dfexpt, dfwt, "Fall")
+    awt5 = refine(dfexpt, dfwt, "Fall")
     awt5['genre'] = awt5['ExperimentState'] + " " + awt5['Type']
     awt5['binary_fallvalue'] = 0
     awt5.loc[(awt5['Fall'] >0), ['binary_fallvalue']] = 1
@@ -457,13 +457,13 @@ def fallingocc(dfexpt, dfwt):
 
 def totalheight(dfexpt, dfwt):
     
-    awt5 = separation(dfexpt, dfwt, "Y")
+    awt5 = refine(dfexpt, dfwt, "Y")
     awt5['genre'] = awt5['ExperimentState'] + " " + awt5['Type']
 
     return awt5
 
 
-def separation(dfexpt, dfwt, phrase):
+def refine(dfexpt, dfwt, phrase):
     import pandas as pd
     import numpy as np 
         
