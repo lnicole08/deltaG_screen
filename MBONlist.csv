@@ -1,0 +1,39 @@
+﻿Type,MBON number,Lobe,Neurotransmitter,Number of cells,MBON names
+Typical MBONs,MBON01,γ5β'2a,Glutamate,1,"SS01308, MB011B, MB210B"
+Typical MBONs,MBON02,β2β'2a,Glutamate,1,"MB399B, SS01337"
+Typical MBONs,MBON03  ,β'2mp,Glutamate,1,"SS01127, MB002B, MB011B, MB210B. SS01143"
+Typical MBONs,MBON04,β'2mp bilateral,Glutamate,1,"SS67727, SS67728, SS67755 (MB011B)"
+Typical MBONs,MBON05,γ4>γ1γ2,Glutamate,1,"MB434B, MB298B, SS01188"
+Typical MBONs,MBON05,γ4>γ1γ2,Glutamate,1,R76B09
+Typical MBONs,MBON06,β1>α,Glutamate,1,"MB434B, MB433B"
+Typical MBONs,MBON07,α1,Glutamate,2,"MB310C, MB323B, MB319C"
+Typical MBONs,MBON08,γ3,GABA,0 or 1,"MB083C, MB110C"
+Typical MBONs,MBON09,γ3β'1,GABA,1 or 2,"MB083C, MB110C"
+Typical MBONs,MBON11 ,γ1реdc>α/β,GABA,1,"MB112C, MB085C, MB262B"
+Typical MBONs,MBON12,γ2α'1,Acetylcholine,2,"MB077B, MB051B, MB090C"
+Typical MBONs,MBON13,α'2,Acetylcholine,1,"MB018B, MB091C"
+Typical MBONs,MBON14,α3,Acetylcholine,2,"MB082C, MB093C, G0239"
+Typical MBONs,МВОN15,α'1,Acetylcholine,4,"MB543B, MB618B"
+Typical MBONs,MBON16 ,α'3aр,Acetylcholine,1,"MB027B, MB549B, SS01298"
+Typical MBONs,MBON17,α'3m,Acetylcholine,2,"MB027B, MB549B, SS01298"
+Typical MBONs,MBON18 ,α2sc ,Acetylcholine,1,"SS01194, MB549C, MB080C, MB050B"
+Typical MBONs,MBON19,α2р3р,Acetylcholine,2,"SS77442, MB542B"
+Typical MBONs,MBON21,γ4γ5,Acetylcholine,1,"SS81353, SS81521, SS46348, VT999036"
+Typical MBONs,MBON22,calyx,Acetylcholine,1,"SS01388, MB242A"
+Typical MBONs,MBON23,α2sp,Acetylcholine,1,SS77424
+Atypical MBONs,MBON10,β'1,GABA,3,"MB057B, MB078C"
+Atypical MBONs,MBON20,γ1γ2,GABA,1,"SS67741, SS95118, VT999036"
+Atypical MBONs,MBON24,β2γ5,Acetylcholine,1,none
+Atypical MBONs,MBON25,γ1γ2,Glutamate,1,none
+Atypical MBONs,MBON26,β'2d,Acetylcholine,1,"SS80958, SS95105, SS95109"
+Atypical MBONs,MBON27,γ5d,Acetylcholine,1,none
+Atypical MBONs,MBON28,α'3a,Acetylcholine,1,"candidates SS81557, SS86947"
+Atypical MBONs,MBON29,γ4γ5,Acetylcholine,1,"SS77450, SS67662"
+Atypical MBONs,MBON30,γ1γ2γ3,Glutamate,1,"SS76094, SS97567"
+Atypical MBONs,MBON31,α'1a,GABA,1,"SS52050, SS76057, SS80896"
+Atypical MBONs,MBON32,γ2,GABA,1,SS76057
+Atypical MBONs,MBON33,γ2γ3,Acetylcholine,1,"SS75199, SS75200, SS77383"
+Atypical MBONs,MBON34,γ2,Glutamate,1,none
+Atypical MBONs,MBON35,γ2,Acetylcholine,1,SS80974
+ ,PAM,PαM,Dopamine,1,R58
+ ,DAN,DαN,Dopamine,1,Th-Gal4
